@@ -1,12 +1,12 @@
 /* eslint-disable react-hooks/immutability */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useAppStore } from "../store/useAppStore";
-import { startConversationAuth } from "../services/api";
+import { useCallback, useRef, useState } from "react";
+import { useStartConversationAuth } from "../services/api";
 import {
-  downsampleBuffer,
   convertFloat32ToInt16Base64,
+  downsampleBuffer,
 } from "../services/audioUtils";
+import { useAppStore } from "../store/useAppStore";
 
 export type VoiceStatus =
   | "idle"
@@ -69,21 +69,35 @@ export function useVoiceSession() {
           audioQueueRef.current.push(buffer);
           if (!isPlayingRef.current) playNextChunk();
         })
-        .catch(() => {
-          // Fallback: Raw PCM (16kHz, 16-bit Mono)
-          const int16Data = new Int16Array(bytes.buffer);
-          const float32Data = new Float32Array(int16Data.length);
-          for (let i = 0; i < int16Data.length; i++) {
-            float32Data[i] = int16Data[i] / 32768.0;
+        .catch((err) => {
+          console.log("decodeAudioData failed, trying PCM fallback", err);
+          try {
+            // Ensure byte length is even for Int16Array
+            const alignedBuffer =
+              bytes.length % 2 === 0
+                ? bytes.buffer
+                : bytes.buffer.slice(0, bytes.length - 1);
+
+            const int16Data = new Int16Array(alignedBuffer);
+            const float32Data = new Float32Array(int16Data.length);
+            for (let i = 0; i < int16Data.length; i++) {
+              float32Data[i] = int16Data[i] / 32768.0;
+            }
+            const buffer = ctx.createBuffer(1, float32Data.length, 16000); // Assuming 16kHz from ElevenLabs
+            buffer.getChannelData(0).set(float32Data);
+            audioQueueRef.current.push(buffer);
+            if (!isPlayingRef.current) playNextChunk();
+          } catch (pcmError) {
+            console.error("PCM decoding failed", pcmError);
           }
-          const buffer = ctx.createBuffer(1, float32Data.length, 16000);
-          buffer.getChannelData(0).set(float32Data);
-          audioQueueRef.current.push(buffer);
-          if (!isPlayingRef.current) playNextChunk();
         });
     },
     [getAudioContext, playNextChunk]
   );
+
+  const { refetch: fetchAuth } = useStartConversationAuth(token!, {
+    enabled: false,
+  });
 
   const connect = async () => {
     if (!token) return;
@@ -95,7 +109,9 @@ export function useVoiceSession() {
       if (ctx.state === "suspended") await ctx.resume();
 
       // 1. Get Signed URL
-      const { signed_url, agent_id } = await startConversationAuth(token);
+      const { data: authData } = await fetchAuth();
+      if (!authData) throw new Error("Failed to get auth data");
+      const { signed_url, agent_id } = authData as any;
       addLog(`Authenticated. Agent: ${agent_id.substring(0, 8)}...`, "success");
 
       // 2. Get Mic
@@ -128,9 +144,9 @@ export function useVoiceSession() {
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "audio" && data.audio_event?.audio_base64) {
+        if (data.type === "audio" && data.audio_event?.audio_base_64) {
           setStatus("speaking");
-          handleAudioMessage(data.audio_event.audio_base64);
+          handleAudioMessage(data.audio_event.audio_base_64);
         } else if (data.type === "agent_response") {
           addLog(
             `Agent: ${data.agent_response_event?.agent_response}`,
@@ -174,6 +190,11 @@ export function useVoiceSession() {
       const downsampled = downsampleBuffer(inputData, ctx.sampleRate, 16000);
       const base64 = convertFloat32ToInt16Base64(downsampled);
 
+      if (!base64) {
+        console.warn("Audio processing produced empty base64 string");
+      }
+
+      // console.log("Sending audio chunk, length:", base64.length);
       ws.send(JSON.stringify({ user_audio_chunk: base64 }));
     };
 
@@ -201,11 +222,6 @@ export function useVoiceSession() {
     isPlayingRef.current = false;
     setStatus("idle");
   }, []);
-
-  // Cleanup on unmount or auth change
-  useEffect(() => {
-    return () => disconnect();
-  }, [disconnect]);
 
   return { status, connect, disconnect };
 }

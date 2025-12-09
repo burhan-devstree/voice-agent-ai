@@ -46,10 +46,10 @@ axiosInstance.interceptors.response.use(
     const hasSuccess =
       status_code === 200 || status_code === 201 || status_code === 202;
 
-    if (hasSuccess) {
-      // The data is already intact, no need to reassign
-      return res;
-    }
+    // if (hasSuccess) {
+    // The data is already intact, no need to reassign
+    return res;
+    // }
     throw new Error(res.data.message || "Unknown API error");
   },
   (error: AxiosError) => {

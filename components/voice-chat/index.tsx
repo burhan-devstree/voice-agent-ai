@@ -1,7 +1,7 @@
 "use client";
-import { fetchMe } from "@/services/api";
+
 import { useAppStore } from "@/store/useAppStore";
-import { useQuery } from "@tanstack/react-query";
+import { useFetchMe } from "@/services/api";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { EmailForm, OtpForm } from "../AuthForms";
@@ -11,22 +11,20 @@ export default function VoiceChat() {
   const { view, token, setUser, logout, isAuthenticated } = useAppStore();
 
   // Next.js-style data fetching effect
-  const {
-    data: userProfile,
-    isError,
+  const { data: userProfile, isError, isLoading } = useFetchMe(token!);
+
+  console.log("VoiceChat State:", {
+    view,
+    token,
     isLoading,
-  } = useQuery({
-    queryKey: ["me", token],
-    queryFn: () => fetchMe(token!),
-    enabled: !!token && isAuthenticated,
-    retry: false,
-    refetchOnWindowFocus: false,
+    isError,
+    userProfile,
   });
 
   useEffect(() => {
     if (userProfile) setUser(userProfile);
     if (isError) logout();
-  }, [userProfile, isError, setUser, logout]);
+  }, [userProfile, isError]);
 
   // Loading state for initial auth check
   if (token && isLoading) {

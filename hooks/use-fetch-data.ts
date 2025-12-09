@@ -8,6 +8,7 @@ const useFetchData = <TData = unknown, TParams = Record<string, unknown>>({
   params = {} as TParams,
   queryOptions = {},
   enabled = true,
+  headers = {},
 }: {
   url: string;
   params?: TParams;
@@ -16,6 +17,7 @@ const useFetchData = <TData = unknown, TParams = Record<string, unknown>>({
     "queryKey" | "queryFn"
   >;
   enabled?: boolean;
+  headers?: Record<string, string>;
 }) => {
   return useQuery<TData, Error>({
     queryKey: [url, params],
@@ -23,22 +25,35 @@ const useFetchData = <TData = unknown, TParams = Record<string, unknown>>({
       const queryString = buildQueryString(params as Record<string, unknown>);
       const response: any = await instance.get({
         url: `${url}${queryString}`,
+        headers,
       });
 
       // Handle different response formats
       // Format 1: { status_code: 200, success: true, data: {...} }
       // Format 2: { status: "success", users: [...], count: 12 }
-      if (
+      // Format 3: Direct object { id: "...", email: "..." }
+      const isSuccess =
         response?.status_code === 200 ||
         response?.status_code === 201 ||
         response?.status === 200 ||
         response?.status === "success" ||
-        response?.success === true
-      ) {
-        // If response has a 'data' property, return the data
-        // Otherwise return the entire response (for Format 2)
+        response?.success === true;
+
+      // Allow if it's explicitly successful
+      if (isSuccess) {
         return (response?.data ?? response) as TData;
       }
+
+      // Allow if it's a plain object that doesn't look like an error
+      if (
+        response &&
+        typeof response === "object" &&
+        !response.error &&
+        !response.status_code
+      ) {
+        return response as TData;
+      }
+
       throw new Error(response?.message || "Failed to fetch data");
     },
     retry: 1,

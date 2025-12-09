@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React from "react";
-import { useMutation } from "@tanstack/react-query";
+
 import { useAppStore } from "../store/useAppStore";
-import { sendOtp, verifyOtp } from "../services/api";
+import { useSendOtp, useVerifyOtp } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
@@ -25,16 +26,21 @@ import {
 export const EmailForm = () => {
   const { emailInput, setEmailInput, setViewState, addLog } = useAppStore();
 
-  const mutation = useMutation({
-    mutationFn: sendOtp,
-    onSuccess: () => {
-      addLog(`OTP sent to ${emailInput}`, "success");
-      setViewState("otp");
-    },
-    onError: (err: Error) => {
-      addLog(err.message, "error");
-    },
-  });
+  const {
+    mutate: sendOtpMutation,
+    isPending: isSendingOtp,
+    isError: isSendError,
+    error: sendError,
+  } = useSendOtp();
+
+  const handleSuccess = () => {
+    addLog(`OTP sent to ${emailInput}`, "success");
+    setViewState("otp");
+  };
+
+  const handleError = (err: Error) => {
+    addLog(err.message, "error");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +48,10 @@ export const EmailForm = () => {
       addLog("Invalid email address", "error");
       return;
     }
-    mutation.mutate(emailInput);
+    sendOtpMutation(
+      { data: { email: emailInput }, id: undefined },
+      { onSuccess: handleSuccess, onError: handleError }
+    );
   };
 
   return (
@@ -73,9 +82,9 @@ export const EmailForm = () => {
               />
             </div>
           </div>
-          {mutation.isError && (
+          {isSendError && (
             <div className="mt-3 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400 text-center">
-              {(mutation.error as Error).message}
+              {(sendError as Error).message}
             </div>
           )}
         </CardContent>
@@ -83,7 +92,7 @@ export const EmailForm = () => {
           <Button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20"
-            isLoading={mutation.isPending}
+            isLoading={isSendingOtp}
             disabled={!emailInput}
           >
             Send Verification Code <ArrowRight className="ml-2 w-4 h-4" />
@@ -97,22 +106,36 @@ export const EmailForm = () => {
 export const OtpForm = () => {
   const { emailInput, setToken, setViewState, addLog } = useAppStore();
   const [otp, setOtp] = React.useState("");
+  const onSuccessVerify = (data: any) => {
+    addLog("Authentication successful", "success");
+    setToken(data?.access_token);
+    setViewState("dashboard");
+  };
 
-  const mutation = useMutation({
-    mutationFn: (code: string) => verifyOtp(emailInput, code),
-    onSuccess: (data) => {
-      addLog("Authentication successful", "success");
-      setToken(data.access_token);
-    },
-    onError: (err: Error) => {
-      addLog(err.message, "error");
-    },
-  });
+  const onErrorVerify = (err: Error) => {
+    addLog(err.message, "error");
+  };
+
+  const {
+    mutate: verifyOtpMutation,
+    isPending: isVerifying,
+    isError: isVerifyError,
+  } = useVerifyOtp(onSuccessVerify, onErrorVerify);
+
+  const handleVerifySuccess = (data: any) => {
+    addLog("Authentication successful", "success");
+    setToken(data.access_token);
+    setViewState("dashboard");
+  };
+
+  const handleVerifyError = (err: Error) => {
+    addLog(err.message, "error");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length < 6) return;
-    mutation.mutate(otp);
+    verifyOtpMutation({ data: { email: emailInput, otp }, id: undefined });
   };
 
   return (
@@ -142,7 +165,7 @@ export const OtpForm = () => {
               autoFocus
             />
           </div>
-          {mutation.isError && (
+          {isVerifyError && (
             <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400 text-center">
               Invalid verification code. Please try again.
             </div>
@@ -153,7 +176,7 @@ export const OtpForm = () => {
             type="submit"
             variant="emerald"
             className="w-full bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20"
-            isLoading={mutation.isPending}
+            isLoading={isVerifying}
             disabled={otp.length < 6}
           >
             Verify & Login <Check className="ml-2 w-4 h-4" />

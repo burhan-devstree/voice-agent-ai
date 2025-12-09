@@ -49,12 +49,29 @@ const usePostData = <TData = unknown, TVariables = unknown>({
         headers,
       });
 
-      if (response?.status_code === 200 || response?.status_code === 201) {
-        toast.success(response?.message, {
-          duration: 3000,
-          position: "top-right",
-        });
-        return response.data;
+      // Handle different response formats
+      const isSuccess =
+        response?.status_code === 200 ||
+        response?.status_code === 201 ||
+        response?.status_code === 202 ||
+        response?.status === 200 ||
+        response?.status === "success" ||
+        response?.success === true;
+
+      // Also consider direct data return as success if it's an object/array and not an error structure
+      // But for now, let's rely on standard fields. If user Modified instance.ts to return res, res.data might be the response.
+      // If the backend returns just { access_token: "..." }, none of the above matches.
+      // However, usually API returns some status or we assume success if no mismatch.
+      // Given the user commented out checks in instance.ts, we should be permissive.
+
+      if (isSuccess || (response && !response.error && !response.status_code)) {
+        if (response?.message) {
+          toast.success(response.message, {
+            duration: 3000,
+            position: "top-right",
+          });
+        }
+        return response.data ?? response;
       }
 
       if (response?.status_code === 400) {
