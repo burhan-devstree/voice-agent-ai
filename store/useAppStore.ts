@@ -1,37 +1,39 @@
-import { create } from 'zustand';
-import { UserProfile, LogEntry } from '../types';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+import { getItem, removeItem, setItem } from "@/utils/storage";
+import { create } from "zustand";
 
 interface AppState {
   // Auth State
   token: string | null;
-  user: UserProfile | null;
+  user: any;
   isAuthenticated: boolean;
-  
+
   // UI State
-  view: 'email' | 'otp' | 'dashboard';
+  view: "email" | "otp" | "dashboard";
   emailInput: string;
-  logs: LogEntry[];
-  
+  logs: any;
+
   // Actions
   setToken: (token: string) => void;
-  setUser: (user: UserProfile) => void;
-  setViewState: (view: 'email' | 'otp' | 'dashboard') => void;
+  setUser: (user: any) => void;
+  setViewState: (view: "email" | "otp" | "dashboard") => void;
   setEmailInput: (email: string) => void;
   logout: () => void;
-  addLog: (message: string, type?: LogEntry['type']) => void;
+  addLog: (message: string, type?: any) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  token: localStorage.getItem('voice_agent_token'),
+  token: getItem("voice_agent_token"),
   user: null,
-  isAuthenticated: !!localStorage.getItem('voice_agent_token'),
-  view: localStorage.getItem('voice_agent_token') ? 'dashboard' : 'email',
-  emailInput: '',
+  isAuthenticated: !!getItem("voice_agent_token"),
+  view: getItem("voice_agent_token") ? "dashboard" : "email",
+  emailInput: "",
   logs: [],
 
   setToken: (token) => {
-    localStorage.setItem('voice_agent_token', token);
-    set({ token, isAuthenticated: true, view: 'dashboard' });
+    setItem("voice_agent_token", token);
+    set({ token, isAuthenticated: true, view: "dashboard" });
   },
 
   setUser: (user) => set({ user }),
@@ -41,17 +43,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   setEmailInput: (email) => set({ emailInput: email }),
 
   logout: () => {
-    localStorage.removeItem('voice_agent_token');
-    set({ token: null, user: null, isAuthenticated: false, view: 'email', logs: [] });
+    removeItem("voice_agent_token");
+    set({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+      view: "email",
+      logs: [],
+    });
   },
 
-  addLog: (message, type: LogEntry['type'] = 'info') => {
-    const newLog: LogEntry = {
+  addLog: (message, type = "info") => {
+    const newLog: any = {
       id: crypto.randomUUID(),
       timestamp: new Date().toLocaleTimeString(),
       message,
-      type
+      type,
     };
     set((state) => ({ logs: [...state.logs, newLog] }));
-  }
+  },
 }));
