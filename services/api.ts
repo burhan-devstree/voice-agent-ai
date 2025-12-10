@@ -9,9 +9,11 @@ export const API = {
   startConversation: "/ws/start-conversation",
 };
 
-export const useSendOtp = () => {
+export const useSendOtp = (onSucess: any, onError: any) => {
   return usePostData({
     url: API.sendOtp,
+    onSuccess: onSucess,
+    onError: onError,
   });
 };
 

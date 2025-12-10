@@ -26,13 +26,6 @@ import {
 export const EmailForm = () => {
   const { emailInput, setEmailInput, setViewState, addLog } = useAppStore();
 
-  const {
-    mutate: sendOtpMutation,
-    isPending: isSendingOtp,
-    isError: isSendError,
-    error: sendError,
-  } = useSendOtp();
-
   const handleSuccess = () => {
     addLog(`OTP sent to ${emailInput}`, "success");
     setViewState("otp");
@@ -42,16 +35,20 @@ export const EmailForm = () => {
     addLog(err.message, "error");
   };
 
+  const {
+    mutate: sendOtpMutation,
+    isPending: isSendingOtp,
+    isError: isSendError,
+    error: sendError,
+  } = useSendOtp(handleSuccess, handleError);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.includes("@")) {
       addLog("Invalid email address", "error");
       return;
     }
-    sendOtpMutation(
-      { data: { email: emailInput }, id: undefined },
-      { onSuccess: handleSuccess, onError: handleError }
-    );
+    sendOtpMutation({ data: { email: emailInput }, id: undefined });
   };
 
   return (

@@ -13,14 +13,6 @@ export default function VoiceChat() {
   // Next.js-style data fetching effect
   const { data: userProfile, isError, isLoading } = useFetchMe(token!);
 
-  console.log("VoiceChat State:", {
-    view,
-    token,
-    isLoading,
-    isError,
-    userProfile,
-  });
-
   useEffect(() => {
     if (userProfile) setUser(userProfile);
     if (isError) logout();

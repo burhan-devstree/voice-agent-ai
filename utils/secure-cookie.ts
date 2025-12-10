@@ -1,6 +1,3 @@
-import Cookies from "js-cookie";
-import { AUTH_TOKEN_KEY, USER_EMAIL_KEY, USER_ROLE_KEY } from "./constants";
-
 // Convert string key → CryptoKey
 async function getCryptoKey() {
   const keyData = new TextEncoder().encode(
@@ -56,45 +53,3 @@ async function decrypt(encryptedValue: string): Promise<string | null> {
     return null;
   }
 }
-
-/* ------------------------------------------------------------
-    PUBLIC FUNCTIONS (names unchanged)
-------------------------------------------------------------- */
-
-export const setSecureCookie = async (key: string, value: string) => {
-  try {
-    if (!value) return;
-
-    const encryptedValue = await encrypt(value);
-
-    Cookies.set(key, encryptedValue, {
-      expires: 7,
-      secure: true,
-      sameSite: "Strict",
-    });
-  } catch (error) {
-    console.error("Error setting secure cookie:", error);
-  }
-};
-
-export const getSecureCookie = async (key: string): Promise<string | null> => {
-  try {
-    const encryptedValue = Cookies.get(key);
-    if (!encryptedValue) return null;
-
-    return await decrypt(encryptedValue);
-  } catch (error) {
-    console.error("Error getting secure cookie:", error);
-    return null;
-  }
-};
-
-export const removeSecureCookie = (key: string) => {
-  Cookies.remove(key);
-};
-
-export const removeAllAuthCookies = () => {
-  removeSecureCookie(AUTH_TOKEN_KEY);
-  removeSecureCookie(USER_EMAIL_KEY);
-  removeSecureCookie(USER_ROLE_KEY);
-};
