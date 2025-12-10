@@ -6,7 +6,7 @@ export const API = {
   sendOtp: "/auth/send-otp",
   verifyOtp: "/auth/verify-otp",
   fetchMe: "/users/me",
-  startConversation: "/ws/start-conversation",
+  startConversation: "/conversation/get-pre-signed-url",
 };
 
 export const useSendOtp = (onSucess: any, onError: any) => {

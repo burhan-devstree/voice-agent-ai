@@ -25,6 +25,7 @@ export function useVoiceSession() {
   const inputProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const audioQueueRef = useRef<AudioBuffer[]>([]);
   const isPlayingRef = useRef<boolean>(false);
+   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Initialize Audio Context lazily
   const getAudioContext = useCallback(() => {
@@ -47,8 +48,25 @@ export function useVoiceSession() {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(ctx.destination);
-    source.onended = () => playNextChunk();
+    currentSourceRef.current = source;
+       source.onended = () => {
+      currentSourceRef.current = null;
+      playNextChunk();
+    };
     source.start(0);
+  }, []);
+
+    const stopAudio = useCallback(() => {
+    if (currentSourceRef.current) {
+      try {
+        currentSourceRef.current.stop();
+      } catch (e) {
+        console.warn("Failed to stop audio source", e);
+      }
+      currentSourceRef.current = null;
+    }
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
   }, []);
 
   const handleAudioMessage = useCallback(
@@ -99,7 +117,7 @@ export function useVoiceSession() {
   });
 
   const connect = async () => {
-    if (!token) return;
+    // if (!token) return;
     setStatus("connecting");
     addLog("Initializing session...", "info");
 
@@ -107,10 +125,13 @@ export function useVoiceSession() {
       const ctx = getAudioContext();
       if (ctx.state === "suspended") await ctx.resume();
 
-      // 1. Get Signed URL
-      const { data: authData } = await fetchAuth();
-      if (!authData) throw new Error("Failed to get auth data");
-      const { signed_url, agent_id } = authData as any;
+      // // 1. Get Signed URL
+      // const { data: authData } = await fetchAuth();
+      // if (!authData) throw new Error("Failed to get auth data");
+      // const { signed_url, agent_id } = authData as any;
+         const agent_id = "agent_5701k5rkajzef7yr1c5hf56wdzks";
+      const signed_url = "wss://api.elevenlabs.io/v1/convai/conversation?agent_id=agent_5701k5rkajzef7yr1c5hf56wdzks&conversation_signature=cvtkn_8901kc3xczayfyz8a974wp2sbwda&conversation_id=conv_3201kc3xczaxe4n8kt79bpcg6vsm"
+      
       addLog(`Authenticated. Agent: ${agent_id.substring(0, 8)}...`, "success");
 
       // 2. Get Mic
@@ -157,6 +178,7 @@ export function useVoiceSession() {
             `You: ${data.user_transcription_event?.user_transcript}`,
             "user"
           );
+             stopAudio();
         }
       };
 
@@ -192,11 +214,20 @@ export function useVoiceSession() {
       const downsampled = downsampleBuffer(inputData, ctx.sampleRate, 16000);
       const base64 = convertFloat32ToInt16Base64(downsampled);
 
+       let sum = 0;
+      for (let i = 0; i < inputData.length; i++) {
+        sum += inputData[i] * inputData[i];
+      }
+      const rms = Math.sqrt(sum / inputData.length);
+       if (rms > 0.05 && isPlayingRef.current) {
+        // console.log("VAD Triggered", rms);
+        stopAudio();
+      }
       if (!base64) {
         console.warn("Audio processing produced empty base64 string");
       }
 
-      // console.log("Sending audio chunk, length:", base64.length);
+      console.log("Sending audio chunk, length:", isPlayingRef.current);
       ws.send(JSON.stringify({ user_audio_chunk: base64 }));
     };
 
@@ -222,8 +253,9 @@ export function useVoiceSession() {
     }
     audioQueueRef.current = [];
     isPlayingRef.current = false;
-    setStatus("idle");
-  }, []);
+     stopAudio();
+     setStatus("idle");
+  }, [stopAudio]);
 
   return { status, connect, disconnect };
 }

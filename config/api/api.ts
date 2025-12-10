@@ -2,7 +2,7 @@ const API = {
   verifyOtp: "/auth/verify-otp",
   sendOtp: "/auth/send-otp",
   userFetch: "/users/me",
-  startConversation: "/ws/start-conversation",
+  startConversation: "/conversation/get-pre-signed-url",
 };
 
 Object.freeze(API);

@@ -55,7 +55,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   addLog: (message, type = "info") => {
     const newLog: any = {
-      id: crypto.randomUUID(),
+      id: window.crypto.randomUUID,
       timestamp: new Date().toLocaleTimeString(),
       message,
       type,
