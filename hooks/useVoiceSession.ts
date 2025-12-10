@@ -154,7 +154,10 @@ export function useVoiceSession() {
           );
           setStatus("connected"); // Back to connected/listening
         } else if (data.type === "user_transcript") {
-          addLog(`You: ${data.user_transcript?.transcript}`, "user");
+          addLog(
+            `You: ${data.user_transcription_event?.user_transcript}`,
+            "user"
+          );
         }
       };
 
