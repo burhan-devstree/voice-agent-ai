@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMemo } from "react";
 
 type Option = {
   label: string;
@@ -13,8 +14,8 @@ type UseSelectOptionParams<T> = {
 
 export const useSelectOptions = <T extends Record<string, any>>({
   listData,
-  labelKey = 'label',
-  valueKey = 'value',
+  labelKey = "label",
+  valueKey = "value",
 }: UseSelectOptionParams<T>) => {
   const options: Option[] = useMemo(() => {
     if (Array.isArray(listData) && listData.length > 0) {

@@ -23,7 +23,7 @@ interface AppState {
   addLog: (message: string, type?: any) => void;
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>((set) => ({
   token: getItem("voice_agent_token"),
   user: null,
   isAuthenticated: !!getItem("voice_agent_token"),

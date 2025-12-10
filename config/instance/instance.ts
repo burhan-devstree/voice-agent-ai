@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable import/no-anonymous-default-export */
 
 import axios, {
   AxiosError,
@@ -40,11 +40,6 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   <T>(res: AxiosResponse<ApiResponse<T>>) => {
     if (!res.data) throw new Error("Error in response");
-    const { status_code, success } = res.data;
-
-    // Handle standard format: { status_code: 200, success: true, data: {...} }
-    const hasSuccess =
-      status_code === 200 || status_code === 201 || status_code === 202;
 
     // if (hasSuccess) {
     // The data is already intact, no need to reassign

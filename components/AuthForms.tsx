@@ -119,16 +119,6 @@ export const OtpForm = () => {
     isError: isVerifyError,
   } = useVerifyOtp(onSuccessVerify, onErrorVerify);
 
-  const handleVerifySuccess = (data: any) => {
-    addLog("Authentication successful", "success");
-    setToken(data.access_token);
-    setViewState("dashboard");
-  };
-
-  const handleVerifyError = (err: Error) => {
-    addLog(err.message, "error");
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length < 6) return;

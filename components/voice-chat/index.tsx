@@ -1,22 +1,23 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useAppStore } from "@/store/useAppStore";
 import { useFetchMe } from "@/services/api";
+import { useAppStore } from "@/store/useAppStore";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { EmailForm, OtpForm } from "../AuthForms";
 import { Dashboard } from "../Dashboard";
 
 export default function VoiceChat() {
-  const { view, token, setUser, logout, isAuthenticated } = useAppStore();
+  const { view, token, setUser, logout } = useAppStore();
 
   // Next.js-style data fetching effect
-  const { data: userProfile, isError, isLoading } = useFetchMe(token!);
+  const { data: userProfile, isError, isLoading } = useFetchMe(token);
 
   useEffect(() => {
-    if (userProfile) setUser(userProfile);
+    if (userProfile && token) setUser(userProfile);
     if (isError) logout();
-  }, [userProfile, isError]);
+  }, [userProfile, isError, token]);
 
   // Loading state for initial auth check
   if (token && isLoading) {

@@ -25,7 +25,7 @@ export const useVerifyOtp = (onSucess: any, onError: any) => {
   });
 };
 
-export const useFetchMe = (token: string) => {
+export const useFetchMe = (token: string | null) => {
   return useFetchData({
     url: API.fetchMe,
     headers: {

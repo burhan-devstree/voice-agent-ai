@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/immutability */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useRef, useState } from "react";
 import { useStartConversationAuth } from "../services/api";
@@ -16,7 +15,7 @@ export type VoiceStatus =
   | "error";
 
 export function useVoiceSession() {
-  const { token, addLog, isAuthenticated } = useAppStore();
+  const { token, addLog } = useAppStore();
   const [status, setStatus] = useState<VoiceStatus>("idle");
 
   // Refs for persistent objects across renders
