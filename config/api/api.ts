@@ -1,7 +1,7 @@
 const API = {
   verifyOtp: "/auth/verify-otp",
   sendOtp: "/auth/send-otp",
-  userFetch: "/users/me",
+  userFetch: "/user/me",
   startConversation: "/conversation/get-pre-signed-url",
 };
 

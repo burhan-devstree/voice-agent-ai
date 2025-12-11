@@ -5,7 +5,7 @@ import usePostData from "@/hooks/use-post-data";
 export const API = {
   sendOtp: "/auth/send-otp",
   verifyOtp: "/auth/verify-otp",
-  fetchMe: "/users/me",
+  fetchMe: "/user/me",
   startConversation: "/conversation/get-pre-signed-url",
 };
 
@@ -44,7 +44,6 @@ export const useStartConversationAuth = (
     url: API.startConversation,
     headers: {
       Authorization: `Bearer ${token}`,
-      "ngrok-skip-browser-warning": "true",
     },
     enabled: options?.enabled ?? !!token,
   });

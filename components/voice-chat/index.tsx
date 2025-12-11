@@ -34,11 +34,11 @@ export default function VoiceChat() {
   // "Routing"
   switch (view) {
     case "otp":
-      return <Dashboard />;
+      return <OtpForm />;
     case "dashboard":
       return <Dashboard />;
     case "email":
     default:
-      return <Dashboard />;
+      return <EmailForm />;
   }
 }

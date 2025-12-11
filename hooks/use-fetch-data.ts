@@ -32,7 +32,7 @@ const useFetchData = <TData = unknown, TParams = Record<string, unknown>>({
       // Format 1: { status_code: 200, success: true, data: {...} }
       // Format 2: { status: "success", users: [...], count: 12 }
       // Format 3: Direct object { id: "...", email: "..." }
-      const isSuccess =
+      const isSuccess =response?.error === false || 
         response?.status_code === 200 ||
         response?.status_code === 201 ||
         response?.status === 200 ||

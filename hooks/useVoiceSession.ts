@@ -117,7 +117,7 @@ export function useVoiceSession() {
   });
 
   const connect = async () => {
-    // if (!token) return;
+    if (!token) return;
     setStatus("connecting");
     addLog("Initializing session...", "info");
 
@@ -125,13 +125,10 @@ export function useVoiceSession() {
       const ctx = getAudioContext();
       if (ctx.state === "suspended") await ctx.resume();
 
-      // // 1. Get Signed URL
-      // const { data: authData } = await fetchAuth();
-      // if (!authData) throw new Error("Failed to get auth data");
-      // const { signed_url, agent_id } = authData as any;
-         const agent_id = "agent_5701k5rkajzef7yr1c5hf56wdzks";
-      const signed_url = "wss://api.elevenlabs.io/v1/convai/conversation?agent_id=agent_5701k5rkajzef7yr1c5hf56wdzks&conversation_signature=cvtkn_8901kc3xczayfyz8a974wp2sbwda&conversation_id=conv_3201kc3xczaxe4n8kt79bpcg6vsm"
-      
+      // 1. Get Signed URL
+      const { data: authData } = await fetchAuth();
+      if (!authData) throw new Error("Failed to get auth data");
+      const { signed_url, agent_id } = authData as any;
       addLog(`Authenticated. Agent: ${agent_id.substring(0, 8)}...`, "success");
 
       // 2. Get Mic
