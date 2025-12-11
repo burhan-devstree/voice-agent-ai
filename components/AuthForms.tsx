@@ -3,7 +3,7 @@
 import React from "react";
 
 import { useAppStore } from "../store/useAppStore";
-import { useSendOtp, useVerifyOtp } from "../services/api";
+import { useSendOtp, useVerifyOtp } from "@/hooks/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {

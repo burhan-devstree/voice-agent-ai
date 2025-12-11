@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import instance from "@/config/instance/instance";
-import { buildQueryString } from "@/utils/commanFunctions";
+import { buildQueryString } from "@/utils/commonFunctions";
+import { validateResponse } from "@/utils/api-response-handler";
 
 const useFetchData = <TData = unknown, TParams = Record<string, unknown>>({
   url,
@@ -28,33 +29,13 @@ const useFetchData = <TData = unknown, TParams = Record<string, unknown>>({
         headers,
       });
 
-      // Handle different response formats
-      // Format 1: { status_code: 200, success: true, data: {...} }
-      // Format 2: { status: "success", users: [...], count: 12 }
-      // Format 3: Direct object { id: "...", email: "..." }
-      const isSuccess =response?.error === false || 
-        response?.status_code === 200 ||
-        response?.status_code === 201 ||
-        response?.status === 200 ||
-        response?.status === "success" ||
-        response?.success === true;
+      const validation = validateResponse(response);
 
-      // Allow if it's explicitly successful
-      if (isSuccess) {
-        return (response?.data ?? response) as TData;
+      if (validation.isSuccess) {
+        return validation.data as TData;
       }
 
-      // Allow if it's a plain object that doesn't look like an error
-      if (
-        response &&
-        typeof response === "object" &&
-        !response.error &&
-        !response.status_code
-      ) {
-        return response as TData;
-      }
-
-      throw new Error(response?.message || "Failed to fetch data");
+      throw new Error(validation.message || "Failed to fetch data");
     },
     retry: 1,
     refetchOnWindowFocus: false,

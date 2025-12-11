@@ -7,8 +7,6 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-// const token = Cookies.get('token') || '';
-
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 50000,
@@ -40,15 +38,9 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   <T>(res: AxiosResponse<ApiResponse<T>>) => {
     if (!res.data) throw new Error("Error in response");
-
-    // if (hasSuccess) {
-    // The data is already intact, no need to reassign
     return res;
-    // }
-    throw new Error(res.data.message || "Unknown API error");
   },
   (error: AxiosError) => {
-    // const status = error.response?.status
     return Promise.reject(error);
   }
 );

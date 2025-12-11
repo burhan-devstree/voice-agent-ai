@@ -7,13 +7,8 @@ import {
 import instance from "@/config/instance/instance";
 import { toast } from "sonner";
 import { extractErrorInfo } from "@/utils/error-response";
-
-interface ApiResponse<T = unknown> {
-  status_code: number;
-  message: string;
-  data: T;
-  error?: boolean;
-}
+import { validateResponse } from "@/utils/api-response-handler";
+import { ApiResponse } from "@/types/api";
 
 interface UsePostDataProps<TData, TVariables> {
   url: string;
@@ -42,45 +37,32 @@ const usePostData = <TData = unknown, TVariables = unknown>({
 
   return useMutation<TData, Error, MutationInput>({
     mutationFn: async ({ id, data }) => {
-      const Finalurl = id ? `${url}/${id}` : url;
+      const finalUrl = id ? `${url}/${id}` : url;
       const response: any = await instance.post<ApiResponse<TData>>({
-        url: Finalurl,
+        url: finalUrl,
         data,
         headers,
       });
 
-      // Handle different response formats
-      const isSuccess =
-        response?.status_code === 200 ||
-        response?.status_code === 201 ||
-        response?.status_code === 202 ||
-        response?.status === 200 ||
-        response?.status === "success" ||
-        response?.success === true;
+      const validation = validateResponse(response);
 
-      // Also consider direct data return as success if it's an object/array and not an error structure
-      // But for now, let's rely on standard fields. If user Modified instance.ts to return res, res.data might be the response.
-      // If the backend returns just { access_token: "..." }, none of the above matches.
-      // However, usually API returns some status or we assume success if no mismatch.
-      // Given the user commented out checks in instance.ts, we should be permissive.
-
-      if (isSuccess || (response && !response.error && !response.status_code)) {
-        if (response?.message) {
-          toast.success(response.message, {
+      if (validation.isSuccess) {
+        if (validation.message) {
+          toast.success(validation.message, {
             duration: 3000,
             position: "top-right",
           });
         }
-        return response.data ?? response;
+        return validation.data as TData;
       }
 
       if (response?.status_code === 400) {
-        throw Object.assign(new Error(response?.message || "Bad Request"), {
+        throw Object.assign(new Error(validation.message || "Bad Request"), {
           status_code: 400,
         });
       }
 
-      throw new Error(response?.message || "Failed to post data");
+      throw new Error(validation.message || "Failed to post data");
     },
 
     onSuccess: (data) => {

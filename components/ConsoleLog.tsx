@@ -29,7 +29,7 @@ export const ConsoleLog = () => {
         {logs.length === 0 && (
           <div className="text-slate-600 italic">Ready to initialize...</div>
         )}
-        {logs.map((log) => (
+        {logs.map((log: { id: string; timestamp: string; message: string; type: string }) => (
           <div key={log.id} className="flex gap-2">
             <span className="text-slate-600 shrink-0">[{log.timestamp}]</span>
             <span

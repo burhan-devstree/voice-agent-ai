@@ -1,7 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-export const getItem = <T>(key: any): T | null => {
+/**
+ * Retrieves an item from localStorage and parses it as JSON.
+ * 
+ * @template T - The expected type of the stored value
+ * @param {string} key - The localStorage key to retrieve
+ * @returns {T | null} The parsed value or null if not found or on error
+ * 
+ * @example
+ * const user = getItem<User>('user');
+ */
+export const getItem = <T>(key: string): T | null => {
   if (typeof window === "undefined") return null;
   let value = null;
   try {
@@ -15,12 +24,30 @@ export const getItem = <T>(key: any): T | null => {
   return value;
 };
 
-export const setItem = <T>(key: any, value: T): any => {
-  if (typeof window === "undefined") return null;
+/**
+ * Stores a value in localStorage as a JSON string.
+ * 
+ * @template T - The type of value to store
+ * @param {string} key - The localStorage key to use
+ * @param {T} value - The value to store
+ * 
+ * @example
+ * setItem('user', { id: 1, name: 'John' });
+ */
+export const setItem = <T>(key: string, value: T): void => {
+  if (typeof window === "undefined") return;
   localStorage.setItem(key, JSON.stringify(value));
 };
 
-export const removeItem = (key: any): any => {
-  if (typeof window === "undefined") return null;
+/**
+ * Removes an item from localStorage.
+ * 
+ * @param {string} key - The localStorage key to remove
+ * 
+ * @example
+ * removeItem('user');
+ */
+export const removeItem = (key: string): void => {
+  if (typeof window === "undefined") return;
   localStorage.removeItem(key);
 };

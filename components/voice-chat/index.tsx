@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useFetchMe } from "@/services/api";
+import { useFetchMe } from "@/hooks/api";
 import { useAppStore } from "@/store/useAppStore";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";

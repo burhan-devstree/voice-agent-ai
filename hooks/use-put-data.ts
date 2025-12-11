@@ -6,6 +6,7 @@ import {
 import instance from "@/config/instance/instance";
 import { toast } from "sonner";
 import { extractErrorInfo } from "@/utils/error-response";
+import { validateResponse } from "@/utils/api-response-handler";
 
 interface PutDataOptions<TData, TVariables> {
   url: string;
@@ -30,14 +31,18 @@ const usePutData = <TData = unknown, TVariables = unknown>({
     mutationFn: async (variables: TVariables): Promise<TData> => {
       const response = await instance.put({ url, data: variables, headers });
 
-      if (response?.status_code === 200) {
-        toast.success(response?.message ?? "Data updated successfully", {
-          position: "top-right",
-        });
-        return response.data as TData;
+      const validation = validateResponse(response);
+
+      if (validation.isSuccess) {
+        if (validation.message) {
+          toast.success(validation.message, {
+            position: "top-right",
+          });
+        }
+        return validation.data as TData;
       }
 
-      const errorMessage = response?.message || "Failed to update data";
+      const errorMessage = validation.message || "Failed to update data";
       const error = new Error(errorMessage);
 
       if (response?.status_code === 400) {
@@ -53,7 +58,6 @@ const usePutData = <TData = unknown, TVariables = unknown>({
       throw error;
     },
     onSuccess: (data: TData) => {
-      // ✅ same refetch logic as patch hook
       refetchQueries.forEach((query) =>
         queryClient.invalidateQueries({ queryKey: [query] })
       );

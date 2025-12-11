@@ -7,13 +7,8 @@ import {
 import instance from "@/config/instance/instance";
 import { toast } from "sonner";
 import { extractErrorInfo } from "@/utils/error-response";
-
-interface ApiResponse<T = unknown> {
-  status_code: number;
-  message: string;
-  data: T;
-  error?: boolean;
-}
+import { validateResponse } from "@/utils/api-response-handler";
+import { ApiResponse } from "@/types/api";
 
 interface UsePatchDataProps<TData, TVariables> {
   url: string;
@@ -42,28 +37,32 @@ const usePatchData = <TData = unknown, TVariables = unknown>({
 
   return useMutation<TData, Error, MutationInput>({
     mutationFn: async ({ id, data }) => {
-      const Finalurl = id ? `${url}/${id}` : url;
+      const finalUrl = id ? `${url}/${id}` : url;
       const response: any = await instance.patch<ApiResponse<TData>>({
-        url: Finalurl,
+        url: finalUrl,
         data,
         headers,
       });
 
-      if (response?.status_code === 200 || response?.status_code === 201) {
-        toast.success(response?.message, {
-          duration: 3000,
-          position: "top-right",
-        });
-        return response.data;
+      const validation = validateResponse(response);
+
+      if (validation.isSuccess) {
+        if (validation.message) {
+          toast.success(validation.message, {
+            duration: 3000,
+            position: "top-right",
+          });
+        }
+        return validation.data as TData;
       }
 
       if (response?.status_code === 400) {
-        throw Object.assign(new Error(response?.message || "Bad Request"), {
+        throw Object.assign(new Error(validation.message || "Bad Request"), {
           status_code: 400,
         });
       }
 
-      throw new Error(response?.message || "Failed to patch data");
+      throw new Error(validation.message || "Failed to patch data");
     },
 
     onSuccess: (data) => {

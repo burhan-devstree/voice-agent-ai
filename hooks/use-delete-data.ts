@@ -7,6 +7,7 @@ import {
 import instance from "@/config/instance/instance";
 import { toast } from "sonner";
 import { extractErrorInfo } from "@/utils/error-response";
+import { validateResponse } from "@/utils/api-response-handler";
 
 interface DeleteDataOptions<TData> {
   url: string;
@@ -29,19 +30,17 @@ const useDeleteData = <TData = unknown>({
     mutationFn: async (id: any): Promise<TData> => {
       const response = await instance.delete({ url: url + `/${id}` });
 
-      if (
-        response?.status_code === 200 ||
-        response?.status_code === 202 ||
-        response?.status_code === 201
-      ) {
+      const validation = validateResponse(response);
+
+      if (validation.isSuccess) {
         toast.success("Data deleted successfully", {
           duration: 3000,
           position: "top-right",
         });
-        return response.data as TData;
+        return validation.data as TData;
       }
 
-      const errorMessage = response?.message || "Failed to delete data";
+      const errorMessage = validation.message || "Failed to delete data";
       if (response?.status_code === 400) {
         throw Object.assign(new Error(errorMessage), { status_code: 400 });
       }

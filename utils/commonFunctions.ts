@@ -74,14 +74,14 @@ export function jsonToFormData(
 /**
  * Capitalizes the first letter of a given string.
  *
- * @param {string} text - The string to capitalize.
- * @returns {string} The string with the first letter capitalized.
+ * @param {string | undefined | null} text - The string to capitalize
+ * @returns {string} The string with the first letter capitalized, or empty string if input is invalid
  *
  * @example
  * capitalizeFirstLetter('hello') // 'Hello'
  * capitalizeFirstLetter('world') // 'World'
+ * capitalizeFirstLetter(null) // ''
  */
-
 export function capitalizeFirstLetter(text: string | undefined | null): string {
   if (!text || typeof text !== "string") return "";
   return text?.charAt(0)?.toUpperCase() + text?.slice(1);
@@ -109,7 +109,20 @@ export function formatCurrency(
   }).format(amount);
 }
 
-export const buildQueryString = (params: any) => {
+/**
+ * Builds a URL query string from an object of parameters.
+ * Handles arrays, null/undefined values, and URL encoding.
+ *
+ * @param {Record<string, unknown>} params - Object containing query parameters
+ * @returns {string} URL-encoded query string with leading '?' or empty string
+ *
+ * @example
+ * buildQueryString({ page: 1, limit: 10 }) // '?page=1&limit=10'
+ * buildQueryString({ tags: ['js', 'ts'] }) // '?tags=js&tags=ts'
+ * buildQueryString({ name: null }) // ''
+ * buildQueryString({}) // ''
+ */
+export const buildQueryString = (params: Record<string, unknown>): string => {
   // Ensure params is an object and has keys
   if (
     !params ||
@@ -133,7 +146,7 @@ export const buildQueryString = (params: any) => {
           .join("&");
       }
       // Encode normal key-value pairs
-      return encodeURIComponent(key) + "=" + encodeURIComponent(value);
+      return encodeURIComponent(key) + "=" + encodeURIComponent(String(value));
     })
     .filter(Boolean) // Remove any empty strings
     .join("&");

@@ -3,16 +3,25 @@
 import { getItem, removeItem, setItem } from "@/utils/storage";
 import { create } from "zustand";
 
+export type LogType = "info" | "success" | "error" | "agent" | "user";
+
+export interface Log {
+  id: string;
+  timestamp: string;
+  message: string;
+  type: LogType;
+}
+
 interface AppState {
   // Auth State
   token: string | null;
-  user: any;
+  user: any; // Keep as any since we don't have user type definition yet
   isAuthenticated: boolean;
 
   // UI State
   view: "email" | "otp" | "dashboard";
   emailInput: string;
-  logs: any;
+  logs: Log[];
 
   // Actions
   setToken: (token: string) => void;
@@ -20,7 +29,7 @@ interface AppState {
   setViewState: (view: "email" | "otp" | "dashboard") => void;
   setEmailInput: (email: string) => void;
   logout: () => void;
-  addLog: (message: string, type?: any) => void;
+  addLog: (message: string, type?: LogType) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -54,8 +63,8 @@ export const useAppStore = create<AppState>((set) => ({
   },
 
   addLog: (message, type = "info") => {
-    const newLog: any = {
-      id: window.crypto.randomUUID,
+    const newLog: Log = {
+      id: window.crypto.randomUUID(),
       timestamp: new Date().toLocaleTimeString(),
       message,
       type,

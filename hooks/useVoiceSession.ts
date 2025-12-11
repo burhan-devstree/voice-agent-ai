@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useRef, useState } from "react";
-import { useStartConversationAuth } from "../services/api";
+import { useStartConversation } from "@/hooks/api";
 import {
   convertFloat32ToInt16Base64,
   downsampleBuffer,
@@ -112,7 +112,7 @@ export function useVoiceSession() {
     [getAudioContext, playNextChunk]
   );
 
-  const { refetch: fetchAuth } = useStartConversationAuth(token!, {
+  const { refetch: fetchAuth } = useStartConversation(token!, {
     enabled: false,
   });
 
