@@ -10,6 +10,7 @@ export const useStartConversation = (
     url: API.startConversation,
     headers: {
       Authorization: `Bearer ${token}`,
+      "ngrok-skip-browser-warning": "true",
     },
     enabled: options?.enabled ?? !!token,
   });

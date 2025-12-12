@@ -63,3 +63,34 @@ export interface ConversationAuthResponse {
 
 export type OnSuccessCallback<T> = (data: T) => void;
 export type OnErrorCallback = (error: Error) => void;
+
+export interface ChatMessage {
+  role: "user" | "agent";
+  message: string;
+  created_at?: string;
+  id?: string;
+  content?: string; // Optional for backward compatibility if needed
+}
+
+export interface ChatHistoryItem {
+  id: string; // The primary ID
+  created_at: string;
+  status: string;
+  duration_secs: number;
+  cost: number;
+  transcript_summary?: string | null;
+  agent_id: string;
+  conversation_id?: string; // Keeping as optional incase legacy usage
+  summary?: string; // Keeping as optional
+}
+
+export interface ConversationDetail {
+  id: string;
+  created_at: string;
+  status: string;
+  duration_secs: number;
+  cost: number;
+  transcript_summary: string | null;
+  agent_id: string;
+  transcript: ChatMessage[];
+}

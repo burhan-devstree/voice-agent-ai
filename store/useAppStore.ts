@@ -32,16 +32,18 @@ interface AppState {
   addLog: (message: string, type?: LogType) => void;
 }
 
+const Token_Storage_Key = "voice_agent_token";
+
 export const useAppStore = create<AppState>((set) => ({
-  token: getItem("voice_agent_token"),
+  token: getItem(Token_Storage_Key),
   user: null,
-  isAuthenticated: !!getItem("voice_agent_token"),
-  view: getItem("voice_agent_token") ? "dashboard" : "email",
+  isAuthenticated: !!getItem(Token_Storage_Key),
+  view: getItem(Token_Storage_Key) ? "dashboard" : "email",
   emailInput: "",
   logs: [],
 
   setToken: (token) => {
-    setItem("voice_agent_token", token);
+    setItem(Token_Storage_Key, token);
     set({ token, isAuthenticated: true, view: "dashboard" });
   },
 
@@ -52,7 +54,7 @@ export const useAppStore = create<AppState>((set) => ({
   setEmailInput: (email) => set({ emailInput: email }),
 
   logout: () => {
-    removeItem("voice_agent_token");
+    removeItem(Token_Storage_Key);
     set({
       token: null,
       user: null,
