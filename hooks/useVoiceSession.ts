@@ -6,6 +6,8 @@ import {
   downsampleBuffer,
 } from "../services/audioUtils";
 import { useAppStore } from "../store/useAppStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { GET_HISTORY } from "./api/use-history";
 
 export type VoiceStatus =
   | "idle"
@@ -15,7 +17,8 @@ export type VoiceStatus =
   | "error";
 
 export function useVoiceSession() {
-  const { token, addLog } = useAppStore();
+  const queryClient = useQueryClient();
+  const { token, addLog, clearLogs } = useAppStore();
   const [status, setStatus] = useState<VoiceStatus>("idle");
 
   // Refs for persistent objects across renders
@@ -25,7 +28,7 @@ export function useVoiceSession() {
   const inputProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const audioQueueRef = useRef<AudioBuffer[]>([]);
   const isPlayingRef = useRef<boolean>(false);
-   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Initialize Audio Context lazily
   const getAudioContext = useCallback(() => {
@@ -49,14 +52,14 @@ export function useVoiceSession() {
     source.buffer = buffer;
     source.connect(ctx.destination);
     currentSourceRef.current = source;
-       source.onended = () => {
+    source.onended = () => {
       currentSourceRef.current = null;
       playNextChunk();
     };
     source.start(0);
   }, []);
 
-    const stopAudio = useCallback(() => {
+  const stopAudio = useCallback(() => {
     if (currentSourceRef.current) {
       try {
         currentSourceRef.current.stop();
@@ -119,7 +122,7 @@ export function useVoiceSession() {
   const connect = async () => {
     if (!token) return;
     setStatus("connecting");
-    addLog("Initializing session...", "info");
+    // addLog("Initializing session...", "info");
 
     try {
       const ctx = getAudioContext();
@@ -129,7 +132,7 @@ export function useVoiceSession() {
       const { data: authData } = await fetchAuth();
       if (!authData) throw new Error("Failed to get auth data");
       const { signed_url, agent_id } = authData as any;
-      addLog(`Authenticated. Agent: ${agent_id.substring(0, 8)}...`, "success");
+      // addLog(`Authenticated. ${agent_id.substring(0, 8)}...`, "success");
 
       // 2. Get Mic
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -147,7 +150,7 @@ export function useVoiceSession() {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        addLog("Connected to ElevenLabs AI", "success");
+        addLog("Connected Successfully", "success");
         setStatus("connected");
 
         // Send Init
@@ -165,17 +168,11 @@ export function useVoiceSession() {
           setStatus("speaking");
           handleAudioMessage(data.audio_event.audio_base_64);
         } else if (data.type === "agent_response") {
-          addLog(
-            `Agent: ${data.agent_response_event?.agent_response}`,
-            "agent"
-          );
+          addLog(`${data.agent_response_event?.agent_response}`, "agent");
           setStatus("connected"); // Back to connected/listening
         } else if (data.type === "user_transcript") {
-          addLog(
-            `You: ${data.user_transcription_event?.user_transcript}`,
-            "user"
-          );
-             stopAudio();
+          addLog(`${data.user_transcription_event?.user_transcript}`, "user");
+          stopAudio();
         }
       };
 
@@ -186,7 +183,7 @@ export function useVoiceSession() {
       };
 
       ws.onclose = (e) => {
-        addLog(`Session closed: ${e.code}`, "info");
+        // addLog(`Session closed: ${e.code}`, "info");
         disconnect();
       };
     } catch (err: any) {
@@ -211,12 +208,12 @@ export function useVoiceSession() {
       const downsampled = downsampleBuffer(inputData, ctx.sampleRate, 16000);
       const base64 = convertFloat32ToInt16Base64(downsampled);
 
-       let sum = 0;
+      let sum = 0;
       for (let i = 0; i < inputData.length; i++) {
         sum += inputData[i] * inputData[i];
       }
       const rms = Math.sqrt(sum / inputData.length);
-       if (rms > 0.05 && isPlayingRef.current) {
+      if (rms > 0.05 && isPlayingRef.current) {
         // console.log("VAD Triggered", rms);
         stopAudio();
       }
@@ -250,9 +247,13 @@ export function useVoiceSession() {
     }
     audioQueueRef.current = [];
     isPlayingRef.current = false;
-     stopAudio();
-     setStatus("idle");
-  }, [stopAudio]);
+    stopAudio();
+    clearLogs(); // Clear logs on disconnect
+    queryClient.invalidateQueries({
+      queryKey: [GET_HISTORY],
+    });
+    setStatus("idle");
+  }, [stopAudio, clearLogs]);
 
   return { status, connect, disconnect };
 }

@@ -3,8 +3,8 @@ import API from "@/config/api/api";
 import { useAppStore } from "@/store/useAppStore";
 import { ChatHistoryItem, ConversationDetail } from "@/types/api";
 
-const GET_HISTORY = API.getHistory;
-const GET_HISTORY_BY_ID = API.getHistoryById;
+export const GET_HISTORY = API.getHistory;
+export const GET_HISTORY_BY_ID = API.getHistoryById;
 
 export const useChatHistory = (params: { skip: number; limit: number }) => {
   const token = useAppStore((state) => state.token);

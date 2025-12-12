@@ -30,6 +30,7 @@ interface AppState {
   setEmailInput: (email: string) => void;
   logout: () => void;
   addLog: (message: string, type?: LogType) => void;
+  clearLogs: () => void;
 }
 
 const Token_Storage_Key = "voice_agent_token";
@@ -73,4 +74,6 @@ export const useAppStore = create<AppState>((set) => ({
     };
     set((state) => ({ logs: [...state.logs, newLog] }));
   },
+
+  clearLogs: () => set({ logs: [] }),
 }));

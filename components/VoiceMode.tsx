@@ -1,171 +1,196 @@
-"use client";
 import {
   Activity,
-  LogOut,
+  AlertCircle,
+  Bot,
+  CheckCircle,
+  Clock,
   Mic,
-  PhoneOff,
   Radio,
   Signal,
+  Terminal,
   User,
 } from "lucide-react";
 import { useVoiceSession } from "../hooks/useVoiceSession";
 import { cn } from "../lib/utils";
 import { useAppStore } from "../store/useAppStore";
-import { ConsoleLog } from "./ConsoleLog";
 import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { useEffect, useRef } from "react";
 
 export const VoiceMode = () => {
-  const { user, logout } = useAppStore();
+  const { logs } = useAppStore();
   const { status, connect, disconnect } = useVoiceSession();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const isActive = status === "connected" || status === "speaking";
-  const isSpeaking = status === "speaking";
   const isConnecting = status === "connecting";
 
+  // Auto scroll to bottom for live transcript
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [logs]);
+
   return (
-    <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
-      <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-md shadow-2xl shadow-black/50 relative">
-        <div className="absolute top-4 right-4 z-20">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={logout}
-            title="Sign Out"
-            className="hover:bg-red-500/10 hover:text-red-400 text-slate-500"
-          >
-            <LogOut className="w-4 h-4" />
-          </Button>
-        </div>
+    <div className="flex flex-col h-full w-full bg-background relative overflow-hidden">
+      {/* Main Transcript Area */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto  space-y-6 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent relative z-0"
+      >
+        <div className="max-w-3xl mx-auto min-h-full flex flex-col justify-end pb-4">
+          {/* Welcome / Placeholder State */}
+          {logs.filter((l) => l.type === "agent" || l.type === "user")
+            .length === 0 && (
+            <div className="flex flex-col items-center justify-center space-y-6 py-20 opacity-50">
+              <div className="relative">
+                <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl animate-pulse"></div>
+                <div className="w-24 h-24 bg-slate-900 rounded-full border border-slate-800 flex items-center justify-center relative z-10">
+                  {isActive ? (
+                    <Activity className="w-10 h-10 text-indigo-400 animate-pulse" />
+                  ) : (
+                    <Mic className="w-10 h-10 text-slate-600" />
+                  )}
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm max-w-sm text-center">
+                {isActive
+                  ? "Listening for your voice..."
+                  : "Start a conversation to begin"}
+              </p>
+            </div>
+          )}
 
-        <CardHeader className="pb-2 relative overflow-hidden">
-          {/* Status Indicator Background Effect */}
-          <div
-            className={cn(
-              "absolute inset-0 opacity-10 transition-colors duration-700 pointer-events-none",
-              isActive ? "bg-indigo-500" : "bg-transparent"
-            )}
-          />
+          {logs.map((log) => {
+            const isUser = log.type === "user";
+            const isAgent = log.type === "agent";
+            const isSystem = !isUser && !isAgent;
 
-          <div className="flex justify-center mb-6 relative z-10">
-            <div
-              className={cn(
-                "relative w-28 h-28 rounded-full flex items-center justify-center transition-all duration-500",
-                isActive
-                  ? "bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_0_50px_-10px_rgba(99,102,241,0.5)]"
-                  : "bg-slate-800 shadow-inner border border-slate-700"
-              )}
-            >
-              {/* Animated Rings */}
-              {isActive && (
-                <>
-                  <div className="absolute inset-0 rounded-full border border-indigo-300/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
-                  <div className="absolute inset-0 rounded-full border border-indigo-400/20 animate-[pulse_3s_cubic-bezier(0.4,0,0.6,1)_infinite]" />
-                </>
-              )}
-
-              {isSpeaking ? (
-                <div className="relative">
-                  <Activity className="w-12 h-12 text-white animate-pulse" />
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-200 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+            if (isSystem) {
+              return (
+                <div key={log.id} className="flex justify-center my-2">
+                  <span
+                    className={cn(
+                      "text-[10px] font-mono px-2 py-1 rounded-md border flex items-center gap-1.5 opacity-70",
+                      log.type === "error"
+                        ? "bg-red-500/10 border-red-500/20 text-red-400"
+                        : log.type === "success"
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                        : "bg-slate-800/50 border-slate-700 text-slate-500"
+                    )}
+                  >
+                    {log.type === "error" && (
+                      <AlertCircle className="w-3 h-3" />
+                    )}
+                    {log.type === "success" && (
+                      <CheckCircle className="w-3 h-3" />
+                    )}
+                    {!["error", "success"].includes(log.type) && (
+                      <Terminal className="w-3 h-3" />
+                    )}
+                    {log.message}
                   </span>
                 </div>
-              ) : (
-                <Mic
-                  className={cn(
-                    "w-12 h-12 transition-colors duration-300",
-                    isActive ? "text-white" : "text-slate-500"
-                  )}
-                />
-              )}
-            </div>
-          </div>
+              );
+            }
 
-          <CardTitle className="text-xl tracking-tight text-center">
-            {isActive ? "Live Session Active" : "Voice Gateway"}
-          </CardTitle>
-          <CardDescription className="flex items-center justify-center gap-2 mt-1">
-            <div
+            return (
+              <div
+                key={log.id}
+                className={cn(
+                  "flex gap-4 group items-end transition-all duration-500 animate-in slide-in-from-bottom-2",
+                  isUser ? "justify-end" : "justify-start"
+                )}
+              >
+                {isAgent && (
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 shadow-sm mt-1">
+                    <Bot className="w-4 h-4 text-indigo-400" />
+                  </div>
+                )}
+
+                <div
+                  className={cn(
+                    "flex flex-col max-w-[85%] md:max-w-[75%]",
+                    isUser ? "items-end" : "items-start"
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-1 px-1 opacity-70">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                      {isUser ? "You" : "AI Assistant"}
+                    </span>
+                    <span className="text-[10px] text-slate-200 flex items-center gap-0.5">
+                      <Clock className="w-3 h-3" />
+                      {log.timestamp}
+                    </span>
+                  </div>
+
+                  <div
+                    className={cn(
+                      "px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm",
+                      isUser
+                        ? "bg-indigo-600 text-white rounded-br-sm shadow-indigo-900/20"
+                        : "bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-sm"
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap break-words">
+                      {log.message}
+                    </p>
+                  </div>
+                </div>
+
+                {isUser && (
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20 mt-1">
+                    <User className="w-4 h-4 text-indigo-400" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom Controls */}
+      <div className="shrink-0 p-6 border-t border-slate-800 bg-slate-900/80 backdrop-blur-xl relative z-20">
+        <div className="max-w-md mx-auto">
+          {!isActive ? (
+            <Button
+              size="lg"
+              onClick={connect}
+              disabled={isConnecting}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border",
-                isActive
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : "bg-slate-800 text-slate-500 border-slate-700"
+                "w-full h-14 text-base font-semibold shadow-xl shadow-indigo-600/20 transition-all active:scale-95",
+                "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white border border-indigo-400/20"
               )}
             >
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full",
-                  isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-500"
-                )}
-              />
-              {isActive ? "Secure Connection Established" : "Disconnected"}
-            </div>
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="space-y-6 pt-2">
-          {/* User Info Badge */}
-          <div className="bg-slate-950/50 rounded-lg p-3 border border-slate-800 flex items-center gap-3 shadow-inner">
-            <div className="h-9 w-9 bg-slate-900 rounded-full border border-slate-800 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-indigo-400" />
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                Authenticated As
-              </p>
-              <p className="text-sm font-medium text-slate-200 truncate">
-                {user?.email || "..."}
-              </p>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="grid gap-3">
-            {!isActive ? (
-              <Button
-                size="lg"
-                onClick={connect}
-                disabled={isConnecting}
-                className={cn(
-                  "w-full h-14 text-base font-semibold shadow-lg transition-all",
-                  "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20 border border-indigo-500/20"
-                )}
-              >
-                {isConnecting ? (
-                  <span className="flex items-center gap-2">
-                    <Signal className="w-5 h-5 animate-pulse" /> Establishing
-                    Link...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Radio className="w-5 h-5" /> Start Conversation
-                  </span>
-                )}
-              </Button>
-            ) : (
-              <Button
-                variant="destructive"
-                size="lg"
-                onClick={disconnect}
-                className="w-full h-14 text-base font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 hover:border-red-500/40 shadow-none"
-              >
-                <PhoneOff className="mr-2 w-5 h-5" /> End Session
-              </Button>
-            )}
-          </div>
-
-          <ConsoleLog />
-        </CardContent>
-      </Card>
+              {isConnecting ? (
+                <span className="flex items-center gap-3">
+                  <Signal className="w-5 h-5 animate-pulse" /> Establishing
+                  Secure Link...
+                </span>
+              ) : (
+                <span className="flex items-center gap-3">
+                  <Radio className="w-5 h-5" /> Start Live Conversation
+                </span>
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="destructive"
+              size="lg"
+              onClick={disconnect}
+              className="w-full h-14 text-base font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 hover:border-red-500/40 shadow-none active:scale-95 transition-all"
+            >
+              <div className="flex items-center justify-center w-full gap-3">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <span>End Live Session</span>
+              </div>
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

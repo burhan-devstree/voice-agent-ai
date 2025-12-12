@@ -13,12 +13,15 @@ export const ChatArea = ({ conversationId }: ChatAreaProps) => {
   console.log("🚀 ~ ChatArea ~ conversationData:", conversationData);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll to bottom
+  // Auto scroll to bottom - REMOVED for history view as per request
+  // We want to start at the top for history
+  /*
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [conversationData, isLoading]);
+  */
 
   if (isLoading) {
     return (
@@ -26,10 +29,10 @@ export const ChatArea = ({ conversationId }: ChatAreaProps) => {
         <div className="relative">
           <div className="w-12 h-12 rounded-full border-2 border-slate-700 border-t-indigo-500 animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-slate-600" />
+            <Bot className="w-5 h-5 text-muted-foreground" />
           </div>
         </div>
-        <p className="text-sm text-slate-500 font-medium animate-pulse">
+        <p className="text-sm text-muted-foreground font-medium animate-pulse">
           Loading conversation...
         </p>
       </div>
@@ -41,13 +44,13 @@ export const ChatArea = ({ conversationId }: ChatAreaProps) => {
   if (!conversationData || messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center h-full">
-        <div className="w-24 h-24 bg-slate-800/30 rounded-full flex items-center justify-center mb-6 ring-1 ring-slate-800">
-          <MessageSquareOff className="w-10 h-10 text-slate-600" />
+        <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mb-6 ring-1 ring-border">
+          <MessageSquareOff className="w-10 h-10 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-medium text-slate-300 mb-2">
+        <h3 className="text-lg font-medium text-foreground mb-2">
           No messages found
         </h3>
-        <p className="text-slate-500 max-w-xs mx-auto text-sm">
+        <p className="text-muted-foreground max-w-xs mx-auto text-sm">
           This conversation appears to be empty or could not be loaded.
         </p>
       </div>
@@ -56,20 +59,20 @@ export const ChatArea = ({ conversationId }: ChatAreaProps) => {
 
   return (
     <div
-      className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent"
+      className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
       ref={scrollRef}
     >
       <div className="max-w-3xl mx-auto space-y-6 pb-10">
         <div className="text-center py-4 space-y-4">
-          <span className="text-xs font-medium text-slate-700 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-800">
+          <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-3 py-1 rounded-full border border-border">
             Conversation History
           </span>
           {conversationData?.transcript_summary && (
-            <div className="mx-auto max-w-2xl bg-gradient-to-br from-indigo-900/20 to-slate-800/20 p-6 rounded-2xl border border-indigo-500/10 shadow-lg">
-              <h4 className="text-sm font-semibold text-indigo-400 mb-2 uppercase tracking-wide">
+            <div className="mx-auto max-w-2xl bg-gradient-to-br from-primary/10 to-muted/20 p-6 rounded-2xl border border-primary/10 shadow-lg">
+              <h4 className="text-sm font-semibold text-primary mb-2 uppercase tracking-wide">
                 Summary
               </h4>
-              <p className="text-slate-300 text-sm leading-relaxed italic">
+              <p className="text-muted-foreground text-sm leading-relaxed italic">
                 {conversationData.transcript_summary}
               </p>
             </div>
@@ -82,13 +85,13 @@ export const ChatArea = ({ conversationId }: ChatAreaProps) => {
             <div
               key={msg.id || idx}
               className={cn(
-                "flex gap-4 group transition-opacity duration-500",
+                "flex gap-4 items-end group transition-opacity duration-500",
                 isUser ? "justify-end" : "justify-start"
               )}
             >
               {!isUser && (
-                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 shadow-sm mt-1">
-                  <Bot className="w-4 h-4 text-indigo-400" />
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border shadow-sm mt-1">
+                  <Bot className="w-4 h-4 text-primary" />
                 </div>
               )}
 
@@ -99,11 +102,11 @@ export const ChatArea = ({ conversationId }: ChatAreaProps) => {
                 )}
               >
                 <div className="flex items-center gap-2 mb-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                     {isUser ? "You" : "AI Assistant"}
                   </span>
                   {msg.created_at && (
-                    <span className="text-[10px] text-slate-600 flex items-center gap-0.5">
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                       <Clock className="w-3 h-3" />
                       {new Date(msg.created_at).toLocaleTimeString([], {
                         hour: "2-digit",
@@ -117,8 +120,8 @@ export const ChatArea = ({ conversationId }: ChatAreaProps) => {
                   className={cn(
                     "px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm transition-all duration-200",
                     isUser
-                      ? "bg-indigo-600 text-white rounded-br-sm"
-                      : "bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-sm"
+                      ? "bg-primary text-primary-foreground rounded-br-sm"
+                      : "bg-muted text-foreground border border-border rounded-bl-sm"
                   )}
                 >
                   <p className="whitespace-pre-wrap break-words">
@@ -128,8 +131,8 @@ export const ChatArea = ({ conversationId }: ChatAreaProps) => {
               </div>
 
               {isUser && (
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20 mt-1">
-                  <User className="w-4 h-4 text-indigo-400" />
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 mt-1">
+                  <User className="w-4 h-4 text-primary" />
                 </div>
               )}
             </div>

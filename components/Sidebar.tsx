@@ -1,171 +1,219 @@
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import { useChatHistory } from "@/hooks/api/use-history";
+import { useVoiceSession } from "@/hooks/useVoiceSession";
 import { cn } from "@/lib/utils";
-import { MessageSquare, PanelLeftClose, Plus } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 
-interface SidebarProps {
-  onSelect: (id: string) => void;
+interface SidebarProps extends React.ComponentProps<typeof ShadcnSidebar> {
+  onConversationSelect: (id: string) => void;
   onNewChat: () => void;
   selectedId: string | null;
-  className?: string;
-  isOpen: boolean;
-  onClose: () => void;
-  isMobile: boolean;
 }
 
 export const Sidebar = ({
-  onSelect,
+  onConversationSelect,
   onNewChat,
   selectedId,
-  className,
-  isOpen,
-  onClose,
-  isMobile,
+  ...props
 }: SidebarProps) => {
-  const { data: history, isLoading } = useChatHistory({ skip: 0, limit: 100 });
+  const {
+    data: history,
+    isLoading,
+    refetch,
+  } = useChatHistory({
+    skip: 0,
+    limit: 100, // TODO: Pagination pending, using static limit 100
+  });
+
+  const { setOpenMobile, isMobile } = useSidebar();
+  const { status } = useVoiceSession();
+  const prevStatus = useRef(status);
+
+  useEffect(() => {
+    // Only refetch when transitioning from a non-idle state to idle (disconnect)
+    // This allows the backend some time to save the session before we fetch
+    if (prevStatus.current !== "idle" && status === "idle") {
+      // Add a small delay to ensure backend has processed the save
+      const timer = setTimeout(() => {
+        refetch();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+    prevStatus.current = status;
+  }, [status, refetch]);
+
+  const handleSelect = (id: string) => {
+    onConversationSelect(id);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  const handleNewChat = () => {
+    onNewChat();
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
-    <div
+    <ShadcnSidebar
+      collapsible="icon"
+      {...props}
       className={cn(
-        "bg-slate-950/95 backdrop-blur-xl border-r border-slate-800 transition-all duration-300 ease-in-out flex flex-col h-full shrink-0",
-        isMobile ? "fixed inset-y-0 left-0 z-50 w-72" : "relative",
-        isMobile && !isOpen && "-translate-x-full",
-        !isMobile && (isOpen ? "w-72" : "w-0 border-none"),
-        className
+        "bg-sidebar border-r border-sidebar-border",
+        props.className
       )}
     >
-      <div className="flex items-center justify-between p-4 border-b border-slate-800/50 overflow-hidden shrink-0 h-16">
-        <Button
-          onClick={onNewChat}
-          size="sm"
-          className="flex-1 justify-start gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-900/20 transition-all active:scale-95"
-          disabled={!isOpen && !isMobile}
-        >
-          <Plus className="w-4 h-4" />{" "}
-          <span className="truncate">New Chat</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="ml-2 text-slate-400 hover:text-white shrink-0"
-          title="Close sidebar"
-        >
-          <PanelLeftClose className="w-5 h-5" />
-        </Button>
-      </div>
-
-      <div
-        className={cn(
-          "flex-1 overflow-y-auto px-2 py-2 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent transition-opacity duration-200",
-          !isOpen && !isMobile ? "opacity-0" : "opacity-100"
-        )}
-      >
-        {isLoading ? (
-          <div className="space-y-2 px-1">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="h-10 w-full bg-slate-800/50 rounded-lg animate-pulse"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2 mb-1 flex items-center justify-between">
-              <span>History</span>
-              <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded-full">
-                {history?.length || 0}
-              </span>
-            </h3>
-            {history?.map((item, idx) => {
-              const conversationId =
-                item.id || item.conversation_id || `temp-${idx}`;
-              // Fallback title logic: Use summary if available, else "Session {n}", else "New Conversation"
-              const displayTitle =
-                item.transcript_summary ||
-                item.summary ||
-                `Session ${history.length - idx}`;
-
-              return (
-                <button
-                  key={conversationId}
-                  onClick={() => {
-                    if (conversationId && !conversationId.startsWith("temp-")) {
-                      onSelect(conversationId);
-                      if (isMobile) onClose();
-                    }
-                  }}
-                  disabled={
-                    !conversationId || conversationId.startsWith("temp-")
-                  }
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-3 text-sm rounded-lg transition-all duration-200 text-left group border border-transparent",
-                    selectedId === conversationId
-                      ? "bg-slate-800 text-slate-100 shadow-md shadow-black/20 border-slate-700"
-                      : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 hover:border-slate-800",
-                    (!conversationId || conversationId.startsWith("temp-")) &&
-                      "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "p-1.5 rounded-md transition-colors shrink-0",
-                      selectedId === conversationId
-                        ? "bg-indigo-500/20 text-indigo-400"
-                        : "bg-slate-800 text-slate-500 group-hover:text-slate-400"
-                    )}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="flex flex-col overflow-hidden text-left">
-                    <span className="truncate font-medium block w-full">
-                      {displayTitle}
-                    </span>
-                    {item.created_at && (
-                      <span className="text-[10px] text-slate-600 bg-transparent truncate">
-                        {new Date(item.created_at).toLocaleDateString(
-                          undefined,
-                          {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-            {(!history || history.length === 0) && (
-              <div className="px-3 py-10 text-center flex flex-col items-center">
-                <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center mb-2">
-                  <MessageSquare className="w-4 h-4 text-slate-700" />
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex flex-col gap-2 pb-2 group-data-[collapsible=icon]:hidden">
+              <div className="flex items-center gap-2 px-2 py-1">
+                <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                  <MessageSquare className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
-                <p className="text-xs text-slate-500 italic">
-                  No history found
-                </p>
+                <span className="font-bold text-sidebar-foreground tracking-tight">
+                  Voice Chat
+                </span>
               </div>
-            )}
-          </div>
-        )}
-      </div>
+              <Button
+                onClick={handleNewChat}
+                size="sm"
+                className="w-full justify-start gap-2 h-auto py-3 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-95 border border-primary/20"
+              >
+                <Plus className="w-4 h-4" />{" "}
+                <span className="truncate font-medium">New Voice Session</span>
+              </Button>
+            </div>
+            {/* Icon-only fallback for collapsed state */}
+            <div className="hidden group-data-[collapsible=icon]:flex items-center justify-center py-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleNewChat}
+                className="h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-      <div
-        className={cn(
-          "p-4 border-t border-slate-800/50 shrink-0 transition-opacity duration-200",
-          !isOpen && !isMobile ? "opacity-0" : "opacity-100"
-        )}
-      >
-        <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-900/50 p-2 rounded-md border border-slate-800/50">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse relative">
-            <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
-          </div>
-          System Operational
-        </div>
-      </div>
-    </div>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>History</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-4">
+              {isLoading ? (
+                <div className="space-y-2 px-2 py-2">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-8 w-full bg-muted/50 rounded-md animate-pulse"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {history?.map((item, idx) => {
+                    const conversationId =
+                      item.id || item.conversation_id || `temp-${idx}`;
+                    const displayTitle =
+                      item.transcript_summary ||
+                      item.summary ||
+                      `Session ${history.length - idx}`;
+                    const isTemp =
+                      !conversationId || conversationId.startsWith("temp-");
+
+                    return (
+                      <SidebarMenuItem key={conversationId}>
+                        <SidebarMenuButton
+                          onClick={() =>
+                            !isTemp && handleSelect(conversationId)
+                          }
+                          isActive={selectedId === conversationId}
+                          disabled={isTemp}
+                          className={cn(
+                            "group/item p-5 transition-all duration-200 ",
+                            selectedId === conversationId
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border-sidebar-border font-medium"
+                              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                            isTemp && "opacity-50 cursor-not-allowed"
+                          )}
+                        >
+                          <MessageSquare
+                            className={cn(
+                              "w-4 h-4",
+                              selectedId === conversationId
+                                ? "text-primary"
+                                : "text-muted-foreground group-hover/item:text-sidebar-foreground"
+                            )}
+                          />
+                          <div className="flex flex-col gap-0.5 overflow-hidden text-left flex-1 min-w-0">
+                            <span className="truncate">{displayTitle}</span>
+                            {item.created_at && (
+                              <span className="text-[10px] text-muted-foreground truncate font-normal">
+                                {new Date(item.created_at).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                  {(!history || history.length === 0) && (
+                    <div className="px-2 py-8 text-center flex flex-col items-center group-data-[collapsible=icon]:hidden">
+                      <MessageSquare className="w-8 h-8 text-muted-foreground mb-2" />
+                      <p className="text-xs text-muted-foreground italic">
+                        No history found
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-md border border-border/50 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:justify-center">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse relative shrink-0">
+                <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
+              </div>
+              <span className="group-data-[collapsible=icon]:hidden">
+                System Operational
+              </span>
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </ShadcnSidebar>
   );
 };
