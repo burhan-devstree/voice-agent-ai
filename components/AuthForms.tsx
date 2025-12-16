@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React from "react";
 import { useRouter } from "next/navigation";
+import React from "react";
 
 import { useSendOtp, useVerifyOtp } from "@/hooks/api";
 import {
@@ -111,7 +111,8 @@ export const OtpForm = () => {
   const onSuccessVerify = (data: any) => {
     // addLog("Authentication successful", "success");
     setToken(data?.access_token);
-    router.push("/");
+
+    router.push("/dashboard");
   };
 
   const onErrorVerify = (err: Error) => {
@@ -177,7 +178,7 @@ export const OtpForm = () => {
             type="button"
             variant="ghost"
             className="w-full text-slate-500 hover:text-slate-300"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push("/")}
           >
             <ArrowLeft className="mr-2 w-3 h-3" /> Change Email
           </Button>

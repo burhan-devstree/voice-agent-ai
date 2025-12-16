@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import { Token_Storage_Key } from "@/utils/constants";
 import Cookies from "js-cookie";
 import { create } from "zustand";
 
@@ -33,8 +34,6 @@ interface AppState {
   clearLogs: () => void;
 }
 
-const Token_Storage_Key = "devstree-voice-chat-token";
-
 export const useAppStore = create<AppState>((set) => ({
   token: Cookies.get(Token_Storage_Key) || null,
   user: null,
@@ -44,7 +43,7 @@ export const useAppStore = create<AppState>((set) => ({
   logs: [],
 
   setToken: (token) => {
-    Cookies.set(Token_Storage_Key, token, { expires: 7 }); // Expires in 7 days
+    Cookies.set(Token_Storage_Key, token, { expires: 7 });
     set({ token, isAuthenticated: true, view: "dashboard" });
   },
 

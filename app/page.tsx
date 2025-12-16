@@ -1,7 +1,6 @@
-"use client";
+import { EmailForm } from "@/components/AuthForms";
 
 const Page = () => {
-  return null;
+  return <EmailForm />;
 };
-
 export default Page;
