@@ -5,12 +5,19 @@ import { useAppStore } from "@/store/useAppStore";
 import { useVoiceSession } from "@/hooks/useVoiceSession";
 import { LogOut, User } from "lucide-react";
 import { Button } from "./ui/button";
+import { useRouter } from "next/navigation";
 
 export const Header = () => {
   const { user, logout } = useAppStore();
   const { status } = useVoiceSession();
+  const router = useRouter();
   const isActive = status === "connected" || status === "speaking";
   const isConnecting = status === "connecting";
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login"); // Force navigation so middleware checks (or just simple route change)
+  };
 
   return (
     <div className="shrink-0 h-16 border-b border-border bg-background/50 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 relative z-10 gap-4">
@@ -76,7 +83,7 @@ export const Header = () => {
       <Button
         variant="ghost"
         size="icon"
-        onClick={logout}
+        onClick={handleLogout}
         title="Sign Out"
         className="hover:bg-red-500/10 hover:text-red-400 text-muted-foreground"
       >

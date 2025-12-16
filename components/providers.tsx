@@ -10,8 +10,12 @@ const queryClient = new QueryClient({
   },
 });
 
+import { VoiceSessionProvider } from "@/hooks/useVoiceSession";
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <VoiceSessionProvider>{children}</VoiceSessionProvider>
+    </QueryClientProvider>
   );
 }

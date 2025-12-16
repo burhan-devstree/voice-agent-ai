@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { getItem, removeItem, setItem } from "@/utils/storage";
+import Cookies from "js-cookie";
 import { create } from "zustand";
 
 export type LogType = "info" | "success" | "error" | "agent" | "user";
@@ -33,18 +33,18 @@ interface AppState {
   clearLogs: () => void;
 }
 
-const Token_Storage_Key = "voice_agent_token";
+const Token_Storage_Key = "devstree-voice-chat-token";
 
 export const useAppStore = create<AppState>((set) => ({
-  token: getItem(Token_Storage_Key),
+  token: Cookies.get(Token_Storage_Key) || null,
   user: null,
-  isAuthenticated: !!getItem(Token_Storage_Key),
-  view: getItem(Token_Storage_Key) ? "dashboard" : "email",
+  isAuthenticated: !!Cookies.get(Token_Storage_Key),
+  view: Cookies.get(Token_Storage_Key) ? "dashboard" : "email",
   emailInput: "",
   logs: [],
 
   setToken: (token) => {
-    setItem(Token_Storage_Key, token);
+    Cookies.set(Token_Storage_Key, token, { expires: 7 }); // Expires in 7 days
     set({ token, isAuthenticated: true, view: "dashboard" });
   },
 
@@ -55,7 +55,7 @@ export const useAppStore = create<AppState>((set) => ({
   setEmailInput: (email) => set({ emailInput: email }),
 
   logout: () => {
-    removeItem(Token_Storage_Key);
+    Cookies.remove(Token_Storage_Key);
     set({
       token: null,
       user: null,

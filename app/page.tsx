@@ -1,8 +1,7 @@
-import VoiceChat from "@/components/voice-chat";
-import React from "react";
+"use client";
 
-const page = () => {
-  return <VoiceChat />;
+const Page = () => {
+  return null;
 };
 
-export default page;
+export default Page;

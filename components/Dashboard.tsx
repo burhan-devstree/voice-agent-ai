@@ -1,3 +1,4 @@
+'use client'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useState } from "react";
 import { ChatArea } from "./ChatArea";

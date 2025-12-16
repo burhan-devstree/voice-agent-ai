@@ -1,12 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useRef, useState } from "react";
 import { useStartConversation } from "@/hooks/api";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import {
   convertFloat32ToInt16Base64,
   downsampleBuffer,
 } from "../services/audioUtils";
 import { useAppStore } from "../store/useAppStore";
-import { useQueryClient } from "@tanstack/react-query";
 import { GET_HISTORY } from "./api/use-history";
 
 export type VoiceStatus =
@@ -16,10 +22,20 @@ export type VoiceStatus =
   | "speaking"
   | "error";
 
-export function useVoiceSession() {
+interface VoiceSessionContextType {
+  status: VoiceStatus;
+  isConnected: boolean;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+}
+
+const VoiceContext = createContext<VoiceSessionContextType | null>(null);
+
+function useVoiceSessionInternal() {
   const queryClient = useQueryClient();
   const { token, addLog, clearLogs } = useAppStore();
   const [status, setStatus] = useState<VoiceStatus>("idle");
+  const [isConnected, setIsConnected] = useState<boolean>(false);
 
   // Refs for persistent objects across renders
   const wsRef = useRef<WebSocket | null>(null);
@@ -119,78 +135,29 @@ export function useVoiceSession() {
     enabled: false,
   });
 
-  const connect = async () => {
-    if (!token) return;
-    setStatus("connecting");
-    // addLog("Initializing session...", "info");
-
-    try {
-      const ctx = getAudioContext();
-      if (ctx.state === "suspended") await ctx.resume();
-
-      // 1. Get Signed URL
-      const { data: authData } = await fetchAuth();
-      if (!authData) throw new Error("Failed to get auth data");
-      const { signed_url, agent_id } = authData as any;
-      // addLog(`Authenticated. ${agent_id.substring(0, 8)}...`, "success");
-
-      // 2. Get Mic
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-      mediaStreamRef.current = stream;
-
-      // 3. Connect WS
-      const ws = new WebSocket(signed_url);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        addLog("Connected Successfully", "success");
-        setStatus("connected");
-
-        // Send Init
-        ws.send(
-          JSON.stringify({ type: "conversation_initiation_client_data" })
-        );
-
-        // Start streaming mic
-        startMicStreaming(ctx, stream, ws);
-      };
-
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "audio" && data.audio_event?.audio_base_64) {
-          setStatus("speaking");
-          handleAudioMessage(data.audio_event.audio_base_64);
-        } else if (data.type === "agent_response") {
-          addLog(`${data.agent_response_event?.agent_response}`, "agent");
-          setStatus("connected"); // Back to connected/listening
-        } else if (data.type === "user_transcript") {
-          addLog(`${data.user_transcription_event?.user_transcript}`, "user");
-          stopAudio();
-        }
-      };
-
-      ws.onerror = (e) => {
-        console.error(e);
-        addLog("WebSocket Error", "error");
-        disconnect();
-      };
-
-      ws.onclose = (e) => {
-        // addLog(`Session closed: ${e.code}`, "info");
-        disconnect();
-      };
-    } catch (err: any) {
-      addLog(`Connection failed: ${err.message}`, "error");
-      setStatus("error");
+  const disconnect = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
     }
-  };
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+    if (inputProcessorRef.current) {
+      inputProcessorRef.current.disconnect();
+      inputProcessorRef.current = null;
+    }
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
+    stopAudio();
+    clearLogs(); // Clear logs on disconnect
+    queryClient.invalidateQueries({
+      queryKey: [GET_HISTORY],
+    });
+    setStatus("idle");
+    setIsConnected(false);
+  }, [stopAudio, clearLogs, queryClient]);
 
   const startMicStreaming = (
     ctx: AudioContext,
@@ -232,28 +199,104 @@ export function useVoiceSession() {
     muteNode.connect(ctx.destination);
   };
 
-  const disconnect = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
-      mediaStreamRef.current = null;
-    }
-    if (inputProcessorRef.current) {
-      inputProcessorRef.current.disconnect();
-      inputProcessorRef.current = null;
-    }
-    audioQueueRef.current = [];
-    isPlayingRef.current = false;
-    stopAudio();
-    clearLogs(); // Clear logs on disconnect
-    queryClient.invalidateQueries({
-      queryKey: [GET_HISTORY],
-    });
-    setStatus("idle");
-  }, [stopAudio, clearLogs]);
+  const connect = async () => {
+    if (!token) return;
+    setStatus("connecting");
+    // addLog("Initializing session...", "info");
 
-  return { status, connect, disconnect };
+    try {
+      const ctx = getAudioContext();
+      if (ctx.state === "suspended") await ctx.resume();
+
+      // 1. Get Signed URL
+      const { data: authData } = await fetchAuth();
+      if (!authData) throw new Error("Failed to get auth data");
+      const { signed_url, agent_id } = authData as any;
+      // addLog(`Authenticated. ${agent_id.substring(0, 8)}...`, "success");
+
+      // 2. Get Mic
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      mediaStreamRef.current = stream;
+
+      // 3. Connect WS
+      const ws = new WebSocket(signed_url);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        addLog("Connected Successfully", "success");
+        setStatus("connected");
+
+        // Send Init
+        ws.send(
+          JSON.stringify({ type: "conversation_initiation_client_data" })
+        );
+
+        // Start streaming mic
+        startMicStreaming(ctx, stream, ws);
+        setIsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "audio" && data.audio_event?.audio_base_64) {
+          setStatus("speaking");
+          handleAudioMessage(data.audio_event.audio_base_64);
+        } else if (data.type === "agent_response") {
+          addLog(`${data.agent_response_event?.agent_response}`, "agent");
+          setStatus("connected"); // Back to connected/listening
+        } else if (data.type === "user_transcript") {
+          addLog(`${data.user_transcription_event?.user_transcript}`, "user");
+          stopAudio();
+        }
+      };
+
+      ws.onerror = (e) => {
+        setIsConnected(false);
+        console.error(e);
+        addLog("Error in Connection", "error");
+        disconnect();
+      };
+
+      ws.onclose = (e) => {
+        setIsConnected(false);
+        // addLog(`Session closed: ${e.code}`, "info");
+        disconnect();
+      };
+    } catch (err: any) {
+      setIsConnected(false);
+      addLog(`Error in Connection`, "error");
+      setStatus("error");
+    }
+  };
+
+  return { status, isConnected, connect, disconnect };
+}
+
+export function VoiceSessionProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = useVoiceSessionInternal();
+
+  return (
+    <VoiceContext.Provider value={session}>{children}</VoiceContext.Provider>
+  );
+}
+
+export function useVoiceSession() {
+  const context = useContext(VoiceContext);
+  if (!context) {
+    throw new Error(
+      "useVoiceSession must be used within a VoiceSessionProvider"
+    );
+  }
+  return context;
 }
