@@ -1,7 +1,8 @@
+"use client";
 import { useChatHistoryById } from "@/hooks/api/use-history";
 import { cn } from "@/lib/utils";
 import { Bot, Clock, MessageSquareOff, User } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 interface ChatAreaProps {
   conversationId: string;

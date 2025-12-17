@@ -1,11 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import { useRouter } from "next/navigation";
 import React from "react";
 
-import { useAppStore } from "../store/useAppStore";
 import { useSendOtp, useVerifyOtp } from "@/hooks/api";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  KeyRound,
+  Mail,
+  ShieldCheck,
+} from "lucide-react";
+import { useAppStore } from "../store/useAppStore";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import {
   Card,
   CardContent,
@@ -14,25 +22,20 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import {
-  ArrowRight,
-  Check,
-  Mail,
-  KeyRound,
-  ShieldCheck,
-  ArrowLeft,
-} from "lucide-react";
+import { Input } from "./ui/input";
 
 export const EmailForm = () => {
-  const { emailInput, setEmailInput, setViewState, addLog } = useAppStore();
+  const { emailInput, setEmailInput } = useAppStore();
+  const router = useRouter();
 
   const handleSuccess = () => {
-    addLog(`OTP sent to ${emailInput}`, "success");
-    setViewState("otp");
+    // addLog(`OTP sent to ${emailInput}`, "success");
+    router.push("/otp");
   };
 
   const handleError = (err: Error) => {
-    addLog(err.message, "error");
+    console.log("🚀 ~ handleError ~ err:", err);
+    // addLog(err.message, "error");
   };
 
   const {
@@ -45,7 +48,7 @@ export const EmailForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.includes("@")) {
-      addLog("Invalid email address", "error");
+      // addLog("Invalid email address", "error");
       return;
     }
     sendOtpMutation({ data: { email: emailInput }, id: undefined });
@@ -72,7 +75,7 @@ export const EmailForm = () => {
               <Mail className="absolute left-3 top-3.5 h-4 w-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
               <Input
                 placeholder="name@company.com"
-                className="pl-9 bg-slate-950/50 border-slate-800 focus-visible:ring-blue-500"
+                className="pl-9 bg-slate-950/50 mt-2 border-slate-800 focus-visible:ring-blue-500"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 autoFocus
@@ -101,16 +104,19 @@ export const EmailForm = () => {
 };
 
 export const OtpForm = () => {
-  const { emailInput, setToken, setViewState, addLog } = useAppStore();
+  const { emailInput, setToken } = useAppStore();
   const [otp, setOtp] = React.useState("");
+  const router = useRouter();
+
   const onSuccessVerify = (data: any) => {
-    addLog("Authentication successful", "success");
+    // addLog("Authentication successful", "success");
     setToken(data?.access_token);
-    setViewState("dashboard");
+
+    router.push("/dashboard");
   };
 
   const onErrorVerify = (err: Error) => {
-    addLog(err.message, "error");
+    // addLog(err.message, "error");
   };
 
   const {
@@ -172,7 +178,7 @@ export const OtpForm = () => {
             type="button"
             variant="ghost"
             className="w-full text-slate-500 hover:text-slate-300"
-            onClick={() => setViewState("email")}
+            onClick={() => router.push("/")}
           >
             <ArrowLeft className="mr-2 w-3 h-3" /> Change Email
           </Button>

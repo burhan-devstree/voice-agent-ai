@@ -1,8 +1,6 @@
-import VoiceChat from "@/components/voice-chat";
-import React from "react";
+import { EmailForm } from "@/components/AuthForms";
 
-const page = () => {
-  return <VoiceChat />;
+const Page = () => {
+  return <EmailForm />;
 };
-
-export default page;
+export default Page;
