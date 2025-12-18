@@ -33,7 +33,7 @@ export const Dashboard = () => {
           selectedId={selectedChatId}
           onConversationSelect={(id) => setSelectedChatId(id)}
           onNewChat={() => setSelectedChatId(null)}
-          className="top-16 bottom-2 right-2 h-auto"
+          className="top-18 bottom-2 right-2 h-auto"
         />
       </div>
     </SidebarProvider>

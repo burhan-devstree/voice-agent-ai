@@ -1,164 +1,111 @@
-import {
-  Activity,
-  AlertCircle,
-  Bot,
-  CheckCircle,
-  Clock,
-  Mic,
-  Radio,
-  Signal,
-  Terminal,
-  User,
-} from "lucide-react";
+import { Activity, Mic, Radio, Signal } from "lucide-react";
 import { useVoiceSession } from "../hooks/useVoiceSession";
 import { cn } from "../lib/utils";
-import { useAppStore } from "../store/useAppStore";
 import { Button } from "./ui/button";
-import { useEffect, useRef } from "react";
+import { SineWave } from "./SineWave";
 
 export const VoiceMode = () => {
-  const { logs } = useAppStore();
-  const { status, connect, disconnect } = useVoiceSession();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const { status, isUserSpeaking, connect, disconnect } = useVoiceSession();
 
   const isActive = status === "connected" || status === "speaking";
   const isConnecting = status === "connecting";
 
-  // Auto scroll to bottom for live transcript
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [logs]);
+  // Determine which speaking animation to show
+  const isAISpeaking = status === "speaking";
+  const isAnySpeaking = isAISpeaking || isUserSpeaking;
 
   return (
     <div className="flex flex-col h-full w-full bg-background relative overflow-hidden">
-      {/* Main Transcript Area */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto  space-y-6 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent relative z-0"
-      >
-        <div className="max-w-3xl mx-auto min-h-full flex flex-col justify-end pb-4">
-          {/* Welcome / Placeholder State */}
-          {logs.filter((l) => l.type === "agent" || l.type === "user")
-            .length === 0 && (
-            <div className="flex flex-col items-center justify-center space-y-6 py-20 opacity-50">
-              <div className="relative">
-                <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl animate-pulse"></div>
-                <div className="w-24 h-24 bg-slate-900 rounded-full border border-slate-800 flex items-center justify-center relative z-10">
-                  {isActive ? (
-                    <Activity className="w-10 h-10 text-indigo-400 animate-pulse" />
-                  ) : (
-                    <Mic className="w-10 h-10 text-slate-600" />
-                  )}
-                </div>
+      {/* Sphere Animation Area */}
+      <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full perspective-[1000px] px-4">
+        {/* Ambient Background Glow */}
+        {(isActive || isConnecting) && (
+          <div
+            className={cn(
+              "absolute inset-0 bg-gradient-to-b opacity-50 pointer-events-none transition-colors duration-700",
+              isConnecting
+                ? "from-amber-500/10 via-amber-500/5 to-transparent"
+                : "from-indigo-500/5 via-transparent to-transparent"
+            )}
+          />
+        )}
+
+        {/* Sine Wave Animation - Centralized and limited width */}
+        {(isActive || isConnecting) && (
+          <div className="w-full max-w-4xl h-40 relative z-0 mb-8 pointer-events-none">
+            <SineWave
+              isSpeaking={isAnySpeaking}
+              type={isConnecting ? "connecting" : isAISpeaking ? "ai" : "user"}
+            />
+          </div>
+        )}
+
+        {/* Current Animation (Orb/Rings) - Hidden when active except during connection */}
+        {!isActive && !isConnecting && (
+          <div
+            className="relative group cursor-pointer"
+            onClick={isActive ? undefined : connect}
+          >
+            {/* Main Sphere Container */}
+            <div
+              className={cn(
+                "relative w-48 h-48 rounded-full transition-all duration-700 ease-out flex items-center justify-center"
+              )}
+            >
+              <div className="absolute inset-0 rounded-full blur-md transition-colors duration-500 bg-slate-800/40" />
+
+              {/* The Actual "3D" Orb */}
+              <div className="relative w-40 h-40 rounded-full shadow-2xl transition-all duration-700 overflow-hidden backdrop-blur-sm border border-white/10 bg-[radial-gradient(circle_at_30%_30%,rgba(71,85,105,0.6),rgba(30,41,59,1),rgba(15,23,42,1))] shadow-black/50">
+                {/* Surface Shine/Gloss */}
+                <div className="absolute top-4 left-6 w-16 h-10 bg-white/10 rounded-full blur-xl rotate-[-45deg] pointer-events-none" />
+                <div className="absolute bottom-4 right-6 w-20 h-20 bg-black/20 rounded-full blur-xl pointer-events-none" />
               </div>
-              <p className="text-slate-400 text-sm max-w-sm text-center">
-                {isActive
-                  ? "Listening for your voice..."
-                  : "Start a conversation to begin"}
-              </p>
             </div>
-          )}
 
-          {logs.map((log) => {
-            const isUser = log.type === "user";
-            const isAgent = log.type === "agent";
-            const isSystem = !isUser && !isAgent;
-
-            if (isSystem) {
-              return (
-                <div key={log.id} className="flex justify-center my-2">
-                  <span
-                    className={cn(
-                      "text-[10px] font-mono px-2 py-1 rounded-md border flex items-center gap-1.5 opacity-70",
-                      log.type === "error"
-                        ? "bg-red-500/10 border-red-500/20 text-red-400"
-                        : log.type === "success"
-                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                        : "bg-slate-800/50 border-slate-700 text-slate-500"
-                    )}
-                  >
-                    {log.type === "error" && (
-                      <AlertCircle className="w-3 h-3" />
-                    )}
-                    {log.type === "success" && (
-                      <CheckCircle className="w-3 h-3" />
-                    )}
-                    {!["error", "success"].includes(log.type) && (
-                      <Terminal className="w-3 h-3" />
-                    )}
-                    {log.message}
-                  </span>
-                </div>
-              );
-            }
-
-            return (
-              <div
-                key={log.id}
-                className={cn(
-                  "flex gap-4 group items-end transition-all duration-500 animate-in slide-in-from-bottom-2",
-                  isUser ? "justify-end" : "justify-start"
-                )}
-              >
-                {isAgent && (
-                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700 shadow-sm mt-1">
-                    <Bot className="w-4 h-4 text-indigo-400" />
-                  </div>
-                )}
-
-                <div
-                  className={cn(
-                    "flex flex-col max-w-[85%] md:max-w-[75%]",
-                    isUser ? "items-end" : "items-start"
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-1 px-1 opacity-70">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                      {isUser ? "You" : "AI Assistant"}
-                    </span>
-                    <span className="text-[10px] text-slate-200 flex items-center gap-0.5">
-                      <Clock className="w-3 h-3" />
-                      {log.timestamp}
-                    </span>
-                  </div>
-
-                  <div
-                    className={cn(
-                      "px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm",
-                      isUser
-                        ? "bg-indigo-600 text-white rounded-br-sm shadow-indigo-900/20"
-                        : "bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-sm"
-                    )}
-                  >
-                    <p className="whitespace-pre-wrap break-words">
-                      {log.message}
-                    </p>
-                  </div>
-                </div>
-
-                {isUser && (
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20 mt-1">
-                    <User className="w-4 h-4 text-indigo-400" />
-                  </div>
-                )}
+            {/* Icon Overlay for Idle/Connecting */}
+            {!isActive && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                <Mic className="w-12 h-12 text-slate-400 group-hover:text-white transition-colors" />
               </div>
-            );
-          })}
+            )}
+          </div>
+        )}
+
+        {/* Status Text Label */}
+        <div className="mt-8 text-center space-y-2 h-10 transition-all duration-300">
+          <p
+            className={cn(
+              "text-lg font-medium tracking-wide transition-colors duration-300",
+              status === "speaking"
+                ? "text-indigo-300"
+                : isUserSpeaking
+                ? "text-emerald-400"
+                : status === "connected"
+                ? "text-indigo-200/70"
+                : status === "connecting"
+                ? "text-amber-400"
+                : "text-slate-500"
+            )}
+          >
+            {status === "speaking" && "AI Speaking..."}
+            {isUserSpeaking && "You are Speaking..."}
+            {status === "connected" && !isUserSpeaking && "Listening..."}
+            {status === "connecting" && "Connecting..."}
+            {status === "idle" && "Tap to Start"}
+          </p>
         </div>
       </div>
 
       {/* Bottom Controls */}
-      <div className="shrink-0 p-6  relative z-20">
-        <div className="max-w-md mx-auto">
+      <div className="shrink-0 p-6 relative z-20 w-full flex justify-center pb-12">
+        <div className="max-w-xs w-full">
           {!isActive ? (
             <Button
               size="lg"
               onClick={connect}
               disabled={isConnecting}
               className={cn(
-                "w-full h-14 text-base font-semibold shadow-xl shadow-indigo-600/20 transition-all active:scale-95",
+                "w-full h-14 !cursor-pointer text-base font-semibold shadow-xl shadow-indigo-600/20 transition-all active:scale-95",
                 "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white border border-indigo-400/20"
               )}
             >
@@ -178,7 +125,7 @@ export const VoiceMode = () => {
               variant="destructive"
               size="lg"
               onClick={disconnect}
-              className="w-full h-14 text-base font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 hover:border-red-500/40 shadow-none active:scale-95 transition-all"
+              className="w-full h-14 !cursor-pointer text-base font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 hover:border-red-500/40 shadow-none active:scale-95 transition-all"
             >
               <div className="flex items-center justify-center w-full gap-3">
                 <span className="relative flex h-3 w-3">

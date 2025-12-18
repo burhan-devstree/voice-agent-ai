@@ -25,6 +25,7 @@ export type VoiceStatus =
 interface VoiceSessionContextType {
   status: VoiceStatus;
   isConnected: boolean;
+  isUserSpeaking: boolean;
   connect: () => Promise<void>;
   disconnect: () => void;
 }
@@ -36,6 +37,8 @@ function useVoiceSessionInternal() {
   const { token, addLog, clearLogs } = useAppStore();
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [isConnected, setIsConnected] = useState<boolean>(false);
+
+  const [isUserSpeaking, setIsUserSpeaking] = useState<boolean>(false);
 
   // Refs for persistent objects across renders
   const wsRef = useRef<WebSocket | null>(null);
@@ -59,10 +62,12 @@ function useVoiceSessionInternal() {
     const ctx = audioContextRef.current;
     if (!ctx || audioQueueRef.current.length === 0) {
       isPlayingRef.current = false;
+      setStatus((prev) => (prev === "speaking" ? "connected" : prev));
       return;
     }
 
     isPlayingRef.current = true;
+    setStatus("speaking");
     const buffer = audioQueueRef.current.shift()!;
     const source = ctx.createBufferSource();
     source.buffer = buffer;
@@ -157,6 +162,7 @@ function useVoiceSessionInternal() {
     });
     setStatus("idle");
     setIsConnected(false);
+    setIsUserSpeaking(false);
   }, [stopAudio, clearLogs, queryClient]);
 
   const startMicStreaming = (
@@ -180,15 +186,24 @@ function useVoiceSessionInternal() {
         sum += inputData[i] * inputData[i];
       }
       const rms = Math.sqrt(sum / inputData.length);
-      if (rms > 0.05 && isPlayingRef.current) {
-        // console.log("VAD Triggered", rms);
+
+      // Update user speaking state
+      if (rms > 0.1) {
+        setIsUserSpeaking(true);
+      } else {
+        setIsUserSpeaking(false);
+      }
+
+      // Increased threshold to 0.2 to prevent background noise interruptions
+      if (rms > 0.2 && isPlayingRef.current) {
+        console.log("Local VAD Interruption Triggered", rms);
         stopAudio();
       }
       if (!base64) {
         console.warn("Audio processing produced empty base64 string");
       }
 
-      console.log("Sending audio chunk, length:", isPlayingRef.current);
+      // console.log("Sending audio chunk, length:", isPlayingRef.current);
       ws.send(JSON.stringify({ user_audio_chunk: base64 }));
     };
 
@@ -250,7 +265,7 @@ function useVoiceSessionInternal() {
           handleAudioMessage(data.audio_event.audio_base_64);
         } else if (data.type === "agent_response") {
           addLog(`${data.agent_response_event?.agent_response}`, "agent");
-          setStatus("connected"); // Back to connected/listening
+          // setStatus("connected"); // REMOVED to prevent premature status toggle before audio ends
         } else if (data.type === "user_transcript") {
           addLog(`${data.user_transcription_event?.user_transcript}`, "user");
           stopAudio();
@@ -276,7 +291,7 @@ function useVoiceSessionInternal() {
     }
   };
 
-  return { status, isConnected, connect, disconnect };
+  return { status, isConnected, isUserSpeaking, connect, disconnect };
 }
 
 export function VoiceSessionProvider({
