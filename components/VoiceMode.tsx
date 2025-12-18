@@ -150,7 +150,7 @@ export const VoiceMode = () => {
       </div>
 
       {/* Bottom Controls */}
-      <div className="shrink-0 p-6 border-t border-slate-800 bg-slate-900/80 backdrop-blur-xl relative z-20">
+      <div className="shrink-0 p-6  relative z-20">
         <div className="max-w-md mx-auto">
           {!isActive ? (
             <Button

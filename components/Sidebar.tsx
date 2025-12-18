@@ -22,6 +22,7 @@ interface SidebarProps extends React.ComponentProps<typeof ShadcnSidebar> {
   onConversationSelect: (id: string) => void;
   onNewChat: () => void;
   selectedId: string | null;
+  overlay?: boolean;
 }
 
 export const Sidebar = ({
@@ -75,7 +76,9 @@ export const Sidebar = ({
       collapsible="icon"
       {...props}
       className={cn(
-        "bg-sidebar border-r border-sidebar-border",
+        "border-sidebar-border",
+        props.side !== "right" && "border-r",
+        props.variant !== "floating" && "bg-sidebar",
         props.className
       )}
     >
