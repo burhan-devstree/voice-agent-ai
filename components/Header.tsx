@@ -34,7 +34,6 @@ export const Header = () => {
     <>
       <div className="shrink-0 h-16 border-b border-border bg-background/50 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 relative z-10 gap-4">
         <div className="flex items-center gap-3">
-          <SidebarTrigger className="-ml-2 text-muted-foreground hover:text-foreground hover:bg-muted/50" />
           <div className="h-8 w-8 bg-primary/20 rounded-full border border-primary/30 flex items-center justify-center shrink-0">
             <User className="w-4 h-4 text-primary" />
           </div>
@@ -92,15 +91,18 @@ export const Header = () => {
           </div>
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsLogoutDialogOpen(true)}
-          title="Sign Out"
-          className="hover:bg-red-500/10 hover:text-red-400 text-muted-foreground"
-        >
-          <LogOut className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsLogoutDialogOpen(true)}
+            title="Sign Out"
+            className="hover:bg-red-500/10 hover:text-red-400 text-muted-foreground"
+          >
+            <LogOut className="w-5 h-5" />
+          </Button>
+          <SidebarTrigger className="text-muted-foreground hover:text-foreground hover:bg-muted/50" />
+        </div>
       </div>
 
       <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>

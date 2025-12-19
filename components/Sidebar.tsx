@@ -22,6 +22,7 @@ interface SidebarProps extends React.ComponentProps<typeof ShadcnSidebar> {
   onConversationSelect: (id: string) => void;
   onNewChat: () => void;
   selectedId: string | null;
+  overlay?: boolean;
 }
 
 export const Sidebar = ({
@@ -75,7 +76,9 @@ export const Sidebar = ({
       collapsible="icon"
       {...props}
       className={cn(
-        "bg-sidebar border-r border-sidebar-border",
+        "border-sidebar-border",
+        props.side !== "right" && "border-r",
+        props.variant !== "floating" && "bg-sidebar",
         props.className
       )}
     >
@@ -199,21 +202,6 @@ export const Sidebar = ({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-md border border-border/50 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:justify-center">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse relative shrink-0">
-                <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
-              </div>
-              <span className="group-data-[collapsible=icon]:hidden">
-                System Operational
-              </span>
-            </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </ShadcnSidebar>
   );
 };

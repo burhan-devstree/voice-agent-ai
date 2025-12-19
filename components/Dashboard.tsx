@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useState } from "react";
 import { ChatArea } from "./ChatArea";
@@ -12,11 +12,6 @@ export const Dashboard = () => {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background text-foreground overflow-hidden font-sans relative">
-        <Sidebar
-          selectedId={selectedChatId}
-          onConversationSelect={(id) => setSelectedChatId(id)}
-          onNewChat={() => setSelectedChatId(null)}
-        />
         <SidebarInset className="bg-transparent">
           <Header />
           <main className="flex-1 flex flex-col relative h-full bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-indigo-900/40 via-background to-background transition-all duration-300 overflow-hidden">
@@ -30,6 +25,16 @@ export const Dashboard = () => {
             )}
           </main>
         </SidebarInset>
+        <Sidebar
+          side="right"
+          variant="floating"
+          collapsible="offcanvas"
+          overlay
+          selectedId={selectedChatId}
+          onConversationSelect={(id) => setSelectedChatId(id)}
+          onNewChat={() => setSelectedChatId(null)}
+          className="top-18 bottom-2 right-2 h-auto"
+        />
       </div>
     </SidebarProvider>
   );
