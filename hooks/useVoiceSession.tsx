@@ -15,6 +15,7 @@ import {
 import { useAppStore } from "../store/useAppStore";
 import { GET_HISTORY } from "./api/use-history";
 
+// --- Types ---
 export type VoiceStatus =
   | "idle"
   | "connecting"
@@ -35,111 +36,59 @@ const VoiceContext = createContext<VoiceSessionContextType | null>(null);
 function useVoiceSessionInternal() {
   const queryClient = useQueryClient();
   const { token, addLog, clearLogs } = useAppStore();
+
+  // --- State ---
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [isConnected, setIsConnected] = useState<boolean>(false);
-
   const [isUserSpeaking, setIsUserSpeaking] = useState<boolean>(false);
 
-  // Refs for persistent objects across renders
+  // --- Refs ---
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const inputProcessorRef = useRef<ScriptProcessorNode | null>(null);
-  const audioQueueRef = useRef<AudioBuffer[]>([]);
-  const isPlayingRef = useRef<boolean>(false);
-  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // Initialize Audio Context lazily
+  // Audio Scheduling Refs
+  const nextStartTimeRef = useRef<number>(0);
+  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const isAIPlayingRef = useRef<boolean>(false);
+
+  // Queue Refs
+  const processingQueueRef = useRef<string[]>([]);
+  const isProcessingRef = useRef<boolean>(false);
+
+  // --- 1. Audio Context Helper ---
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+      const AudioCtx =
+        window.AudioContext || (window as any).webkitAudioContext;
+      audioContextRef.current = new AudioCtx();
     }
     return audioContextRef.current;
   }, []);
 
-  const playNextChunk = useCallback(() => {
-    const ctx = audioContextRef.current;
-    if (!ctx || audioQueueRef.current.length === 0) {
-      isPlayingRef.current = false;
-      setStatus((prev) => (prev === "speaking" ? "connected" : prev));
-      return;
-    }
-
-    isPlayingRef.current = true;
-    setStatus("speaking");
-    const buffer = audioQueueRef.current.shift()!;
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    currentSourceRef.current = source;
-    source.onended = () => {
-      currentSourceRef.current = null;
-      playNextChunk();
-    };
-    source.start(0);
-  }, []);
-
-  const stopAudio = useCallback(() => {
-    if (currentSourceRef.current) {
+  // --- 2. Kill Switch (Clear Audio) ---
+  const stopAudioAndClearQueue = useCallback(() => {
+    // Stop all playing sources
+    activeSourcesRef.current.forEach((source) => {
       try {
-        currentSourceRef.current.stop();
+        source.stop();
       } catch (e) {
-        console.warn("Failed to stop audio source", e);
+        /* ignore */
       }
-      currentSourceRef.current = null;
-    }
-    audioQueueRef.current = [];
-    isPlayingRef.current = false;
+    });
+    activeSourcesRef.current = [];
+
+    // Reset State
+    processingQueueRef.current = [];
+    isProcessingRef.current = false;
+    isAIPlayingRef.current = false;
+    nextStartTimeRef.current = 0;
+
+    setStatus((prev) => (prev === "speaking" ? "connected" : prev));
   }, []);
 
-  const handleAudioMessage = useCallback(
-    (base64Data: string) => {
-      const ctx = getAudioContext();
-      const binaryString = window.atob(base64Data);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      // Try decoding (MP3/WAV container) or fallback to PCM
-      ctx
-        .decodeAudioData(bytes.buffer.slice(0))
-        .then((buffer) => {
-          audioQueueRef.current.push(buffer);
-          if (!isPlayingRef.current) playNextChunk();
-        })
-        .catch((err) => {
-          console.log("decodeAudioData failed, trying PCM fallback", err);
-          try {
-            // Ensure byte length is even for Int16Array
-            const alignedBuffer =
-              bytes.length % 2 === 0
-                ? bytes.buffer
-                : bytes.buffer.slice(0, bytes.length - 1);
-
-            const int16Data = new Int16Array(alignedBuffer);
-            const float32Data = new Float32Array(int16Data.length);
-            for (let i = 0; i < int16Data.length; i++) {
-              float32Data[i] = int16Data[i] / 32768.0;
-            }
-            const buffer = ctx.createBuffer(1, float32Data.length, 16000); // Assuming 16kHz from ElevenLabs
-            buffer.getChannelData(0).set(float32Data);
-            audioQueueRef.current.push(buffer);
-            if (!isPlayingRef.current) playNextChunk();
-          } catch (pcmError) {
-            console.error("PCM decoding failed", pcmError);
-          }
-        });
-    },
-    [getAudioContext, playNextChunk]
-  );
-
-  const { refetch: fetchAuth } = useStartConversation(token!, {
-    enabled: false,
-  });
-
+  // --- 3. Disconnect (Moved Up to fix ReferenceError) ---
   const disconnect = useCallback(() => {
     if (wsRef.current) {
       wsRef.current.close();
@@ -153,58 +102,162 @@ function useVoiceSessionInternal() {
       inputProcessorRef.current.disconnect();
       inputProcessorRef.current = null;
     }
-    audioQueueRef.current = [];
-    isPlayingRef.current = false;
-    stopAudio();
-    clearLogs(); // Clear logs on disconnect
-    queryClient.invalidateQueries({
-      queryKey: [GET_HISTORY],
-    });
+
+    stopAudioAndClearQueue();
+    clearLogs();
+    queryClient.invalidateQueries({ queryKey: [GET_HISTORY] });
+
     setStatus("idle");
     setIsConnected(false);
     setIsUserSpeaking(false);
-  }, [stopAudio, clearLogs, queryClient]);
+  }, [stopAudioAndClearQueue, clearLogs, queryClient]);
 
+  // --- 4. Scheduler (Time-based playback) ---
+  const scheduleBuffer = useCallback(
+    (buffer: AudioBuffer) => {
+      const ctx = getAudioContext();
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+
+      const currentTime = ctx.currentTime;
+      // Reset time if we lagged behind (clipping fix)
+      if (nextStartTimeRef.current < currentTime) {
+        nextStartTimeRef.current = currentTime + 0.05;
+      }
+
+      source.start(nextStartTimeRef.current);
+      nextStartTimeRef.current += buffer.duration;
+
+      activeSourcesRef.current.push(source);
+      isAIPlayingRef.current = true;
+      setStatus("speaking");
+
+      source.onended = () => {
+        activeSourcesRef.current = activeSourcesRef.current.filter(
+          (s) => s !== source
+        );
+        if (activeSourcesRef.current.length === 0) {
+          isAIPlayingRef.current = false;
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            setStatus("connected");
+          }
+        }
+      };
+    },
+    [getAudioContext]
+  );
+
+  // --- 5. Queue Processor (With PCM Fallback) ---
+  const processQueue = useCallback(async () => {
+    if (isProcessingRef.current || processingQueueRef.current.length === 0)
+      return;
+
+    isProcessingRef.current = true;
+    const ctx = getAudioContext();
+
+    try {
+      const base64Data = processingQueueRef.current.shift();
+      if (!base64Data) return;
+
+      const binaryString = window.atob(base64Data);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Try Standard Decode (WAV/MP3)
+      try {
+        // We copy the buffer because decodeAudioData detaches it
+        const bufferCopy = bytes.buffer.slice(0);
+        const audioBuffer = await ctx.decodeAudioData(bufferCopy);
+        scheduleBuffer(audioBuffer);
+      } catch (decodeError) {
+        // console.warn("Standard decode failed, trying Raw PCM fallback...", decodeError);
+
+        // --- FALLBACK: RAW PCM DECODING ---
+        // If decodeAudioData fails, the backend sent raw samples (Int16) without headers.
+        try {
+          // 1. Convert Uint8Array -> Int16Array
+          // Handle potential alignment issues
+          const int16Data = new Int16Array(
+            bytes.buffer,
+            bytes.byteOffset,
+            bytes.byteLength / 2
+          );
+
+          // 2. Convert Int16 -> Float32 (Range -1.0 to 1.0)
+          const float32Data = new Float32Array(int16Data.length);
+          for (let i = 0; i < int16Data.length; i++) {
+            float32Data[i] = int16Data[i] / 32768.0;
+          }
+
+          // 3. Create AudioBuffer manually
+          // Note: Most WS backends send 16000Hz or 24000Hz.
+          // If voices sound slow/deep, increase this number. If chipmunk, decrease it.
+          const pcmBuffer = ctx.createBuffer(1, float32Data.length, 16000);
+          pcmBuffer.getChannelData(0).set(float32Data);
+
+          scheduleBuffer(pcmBuffer);
+        } catch (pcmError) {
+          console.error("Critical: Failed to decode audio data", pcmError);
+        }
+      }
+    } catch (err) {
+      console.error("Error processing audio queue", err);
+    } finally {
+      isProcessingRef.current = false;
+      if (processingQueueRef.current.length > 0) {
+        processQueue(); // Process next chunk
+      }
+    }
+  }, [getAudioContext, scheduleBuffer]);
+
+  const handleIncomingAudio = useCallback(
+    (base64Data: string) => {
+      if (isUserSpeaking) return; // Don't queue if interrupting
+      processingQueueRef.current.push(base64Data);
+      processQueue();
+    },
+    [isUserSpeaking, processQueue]
+  );
+
+  // --- 6. Mic & VAD ---
   const startMicStreaming = (
     ctx: AudioContext,
     stream: MediaStream,
     ws: WebSocket
   ) => {
     const source = ctx.createMediaStreamSource(stream);
-    const processor = ctx.createScriptProcessor(8192, 1, 1);
+    const processor = ctx.createScriptProcessor(4096, 1, 1);
     inputProcessorRef.current = processor;
 
     processor.onaudioprocess = (e) => {
       if (ws.readyState !== WebSocket.OPEN) return;
 
       const inputData = e.inputBuffer.getChannelData(0);
-      const downsampled = downsampleBuffer(inputData, ctx.sampleRate, 16000);
-      const base64 = convertFloat32ToInt16Base64(downsampled);
 
+      // Calculate RMS
       let sum = 0;
       for (let i = 0; i < inputData.length; i++) {
         sum += inputData[i] * inputData[i];
       }
       const rms = Math.sqrt(sum / inputData.length);
 
-      // Update user speaking state
       if (rms > 0.1) {
         setIsUserSpeaking(true);
+        if (isAIPlayingRef.current && rms > 0.15) {
+          console.log("Interruption Triggered");
+          stopAudioAndClearQueue();
+        }
       } else {
         setIsUserSpeaking(false);
       }
 
-      // Increased threshold to 0.2 to prevent background noise interruptions
-      if (rms > 0.2 && isPlayingRef.current) {
-        console.log("Local VAD Interruption Triggered", rms);
-        stopAudio();
-      }
-      if (!base64) {
-        console.warn("Audio processing produced empty base64 string");
-      }
-
-      // console.log("Sending audio chunk, length:", isPlayingRef.current);
-      ws.send(JSON.stringify({ user_audio_chunk: base64 }));
+      const downsampled = downsampleBuffer(inputData, ctx.sampleRate, 16000);
+      const base64 = convertFloat32ToInt16Base64(downsampled);
+      if (base64) ws.send(JSON.stringify({ user_audio_chunk: base64 }));
     };
 
     source.connect(processor);
@@ -214,22 +267,23 @@ function useVoiceSessionInternal() {
     muteNode.connect(ctx.destination);
   };
 
+  const { refetch: fetchAuth } = useStartConversation(token!, {
+    enabled: false,
+  });
+
+  // --- 7. Connect ---
   const connect = async () => {
     if (!token) return;
     setStatus("connecting");
-    // addLog("Initializing session...", "info");
 
     try {
       const ctx = getAudioContext();
       if (ctx.state === "suspended") await ctx.resume();
 
-      // 1. Get Signed URL
       const { data: authData } = await fetchAuth();
       if (!authData) throw new Error("Failed to get auth data");
-      const { signed_url, agent_id } = authData as any;
-      // addLog(`Authenticated. ${agent_id.substring(0, 8)}...`, "success");
+      const { signed_url } = authData as any;
 
-      // 2. Get Mic
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -240,20 +294,15 @@ function useVoiceSessionInternal() {
       });
       mediaStreamRef.current = stream;
 
-      // 3. Connect WS
       const ws = new WebSocket(signed_url);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        addLog("Connected Successfully", "success");
+        addLog("Connected", "success");
         setStatus("connected");
-
-        // Send Init
         ws.send(
           JSON.stringify({ type: "conversation_initiation_client_data" })
         );
-
-        // Start streaming mic
         startMicStreaming(ctx, stream, ws);
         setIsConnected(true);
       };
@@ -261,33 +310,29 @@ function useVoiceSessionInternal() {
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.type === "audio" && data.audio_event?.audio_base_64) {
-          setStatus("speaking");
-          handleAudioMessage(data.audio_event.audio_base_64);
+          handleIncomingAudio(data.audio_event.audio_base_64);
         } else if (data.type === "agent_response") {
           addLog(`${data.agent_response_event?.agent_response}`, "agent");
-          // setStatus("connected"); // REMOVED to prevent premature status toggle before audio ends
         } else if (data.type === "user_transcript") {
           addLog(`${data.user_transcription_event?.user_transcript}`, "user");
-          stopAudio();
+          stopAudioAndClearQueue();
         }
       };
 
       ws.onerror = (e) => {
-        setIsConnected(false);
         console.error(e);
-        addLog("Error in Connection", "error");
-        disconnect();
+        addLog("Connection Error", "error");
+        disconnect(); // Disconnect is now defined above!
       };
 
-      ws.onclose = (e) => {
-        setIsConnected(false);
-        // addLog(`Session closed: ${e.code}`, "info");
+      ws.onclose = () => {
         disconnect();
       };
     } catch (err: any) {
-      setIsConnected(false);
-      addLog(`Error in Connection`, "error");
+      console.error(err);
+      addLog("Connection Failed", "error");
       setStatus("error");
+      setIsConnected(false);
     }
   };
 
@@ -300,7 +345,6 @@ export function VoiceSessionProvider({
   children: React.ReactNode;
 }) {
   const session = useVoiceSessionInternal();
-
   return (
     <VoiceContext.Provider value={session}>{children}</VoiceContext.Provider>
   );
@@ -308,10 +352,9 @@ export function VoiceSessionProvider({
 
 export function useVoiceSession() {
   const context = useContext(VoiceContext);
-  if (!context) {
+  if (!context)
     throw new Error(
       "useVoiceSession must be used within a VoiceSessionProvider"
     );
-  }
   return context;
 }
