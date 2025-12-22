@@ -39,7 +39,7 @@ export const Header = () => {
       <div className="shrink-0 h-16 border-b border-border bg-background/60 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 relative z-10">
         {/* Left Side: Brand */}
         <div className="flex items-center gap-4">
-          <div className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-xl shadow-lg border border-white/20 transition-all hover:scale-105 duration-300">
+          <div className="bg-white/95  px-2 py-1 rounded-xl shadow-lg border border-white/20 transition-all hover:scale-105 duration-300">
             <Link
               href={"https://www.devstree.com/"}
               target="_blank"
@@ -47,11 +47,11 @@ export const Header = () => {
             >
               {" "}
               <Image
-                src={IMAGES.FullLogo}
+                src={IMAGES.FullLogoBlack}
                 alt="Devstree Full Logo"
                 width={80}
                 height={32}
-                quality={100}
+                unoptimized
                 className="h-8 w-auto object-contain"
               />
             </Link>

@@ -35,13 +35,13 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
           rel="noopener noreferrer"
           className="block group"
         >
-          <div className="bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-xl border border-white/20 transition-all group-hover:scale-105 group-hover:bg-white duration-300">
+          <div className="bg-white/95  p-3 rounded-2xl shadow-xl border border-white/20 transition-all group-hover:scale-105 group-hover:bg-white duration-300">
             <Image
-              src={IMAGES.FullLogo}
+              src={IMAGES.FullLogoBlack}
               alt="Devstree Full Logo"
               width={100}
               height={50}
-              quality={95}
+              unoptimized
               className="h-8 w-auto object-contain"
             />
           </div>
@@ -56,12 +56,13 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
           rel="noopener noreferrer"
           className="block"
         >
-          <div className="bg-white/95 backdrop-blur-sm p-2.5 rounded-xl shadow-lg border border-white/20">
+          <div className="bg-white/95 p-2.5 rounded-xl shadow-lg border border-white/20">
             <Image
-              src={IMAGES.FullLogo}
+              src={IMAGES.FullLogoBlack}
               alt="Devstree Full Logo"
               width={130}
               height={40}
+              unoptimized
               className="h-7 w-auto object-contain"
             />
           </div>

@@ -1,7 +1,10 @@
 import Dlogo from "@/public/devstree-logo.png";
-import Fulllogo from "@/public/devs-logos.svg";
 
 export const IMAGES = {
   DevstreeDLogo: Dlogo,
-  FullLogo: Fulllogo,
+  FullLogoBlack:
+    "https://devstree-ai-chatbot.s3.ap-south-1.amazonaws.com/devstree-logo-black.png",
+
+  FullLogoWhite:
+    "https://devstree-ai-chatbot.s3.ap-south-1.amazonaws.com/devstree-logo-white.png",
 };
