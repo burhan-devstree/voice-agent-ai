@@ -31,11 +31,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+      "inline-flex items-center !cursor-pointer justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 
     const variants = {
       default:
-        "bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/20",
+        "bg-primary/80 text-white hover:bg-primary/70 shadow-lg shadow-primary/50",
       destructive:
         "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20",
       emerald:

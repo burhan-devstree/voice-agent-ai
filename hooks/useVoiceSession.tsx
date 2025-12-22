@@ -14,6 +14,7 @@ import {
 } from "../services/audioUtils";
 import { useAppStore } from "../store/useAppStore";
 import { GET_HISTORY } from "./api/use-history";
+import { toast } from "sonner";
 
 // --- Types ---
 export type VoiceStatus =
@@ -329,8 +330,12 @@ function useVoiceSessionInternal() {
         disconnect();
       };
     } catch (err: any) {
+      toast.error(err.message, {
+        position: "top-right",
+        duration: 3000,
+      });
       console.error(err);
-      addLog("Connection Failed", "error");
+      addLog(err.message, "error");
       setStatus("error");
       setIsConnected(false);
     }
