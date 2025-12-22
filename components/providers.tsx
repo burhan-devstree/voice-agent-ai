@@ -11,11 +11,13 @@ const queryClient = new QueryClient({
 });
 
 import { VoiceSessionProvider } from "@/hooks/useVoiceSession";
+import { Toaster } from "sonner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <VoiceSessionProvider>{children}</VoiceSessionProvider>
+      <Toaster duration={3000} position="top-right" />
     </QueryClientProvider>
   );
 }

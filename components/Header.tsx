@@ -15,9 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import Image from "next/image";
+import { IMAGES } from "@/utils/Images";
+import Link from "next/link";
 
 export const Header = () => {
   const { user, logout } = useAppStore();
+  console.log("🚀 ~ Header ~ user:", user);
   const { status } = useVoiceSession();
   const router = useRouter();
   const isActive = status === "connected" || status === "speaking";
@@ -32,31 +36,38 @@ export const Header = () => {
 
   return (
     <>
-      <div className="shrink-0 h-16 border-b border-border bg-background/50 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 relative z-10 gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-primary/20 rounded-full border border-primary/30 flex items-center justify-center shrink-0">
-            <User className="w-4 h-4 text-primary" />
-          </div>
-          <div className="hidden sm:block">
-            <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
-              Authenticated As
-            </p>
-            <p className="text-sm font-medium text-foreground truncate max-w-[150px] lg:max-w-xs">
-              {user?.email || "User"}
-            </p>
+      <div className="shrink-0 h-16 border-b border-border bg-background/60 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 relative z-10">
+        {/* Left Side: Brand */}
+        <div className="flex items-center gap-4">
+          <div className="bg-white/95  px-2 py-1 rounded-xl shadow-lg border border-white/20 transition-all hover:scale-105 duration-300">
+            <Link
+              href={"https://www.devstree.com/"}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {" "}
+              <Image
+                src={IMAGES.FullLogoBlack}
+                alt="Devstree Full Logo"
+                width={80}
+                height={32}
+                unoptimized
+                className="h-8 w-auto object-contain"
+              />
+            </Link>
           </div>
         </div>
 
-        {/* Status Center Badge */}
+        {/* Status Center Badge (Absolute Centered) */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
           <div
             className={cn(
-              "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300",
+              "flex items-center gap-2.5 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 shadow-sm",
               isActive
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_-3px_rgba(16,185,129,0.3)]"
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10"
                 : isConnecting
-                ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                : "bg-muted/50 text-muted-foreground border-border"
+                ? "bg-primary/15 text-primary border-primary/30 shadow-primary/10"
+                : "bg-slate-900/50 text-slate-400 border-slate-800"
             )}
           >
             <div className="relative flex h-2 w-2">
@@ -66,42 +77,66 @@ export const Header = () => {
                   isActive
                     ? "bg-emerald-400"
                     : isConnecting
-                    ? "bg-yellow-400"
+                    ? "bg-primary"
                     : "hidden"
                 )}
-              ></span>
+              />
               <span
                 className={cn(
                   "relative inline-flex rounded-full h-2 w-2",
                   isActive
                     ? "bg-emerald-500"
                     : isConnecting
-                    ? "bg-yellow-500"
-                    : "bg-muted-foreground"
+                    ? "bg-primary"
+                    : "bg-slate-600"
                 )}
-              ></span>
+              />
             </div>
-            <span className="uppercase tracking-wider">
-              {status === "idle" && "Ready"}
-              {status === "connecting" && "Connecting"}
-              {status === "connected" && "Listening"}
-              {status === "speaking" && "Speaking"}
-              {status === "error" && "Error"}
+            <span className="uppercase tracking-widest">
+              {status === "idle" && "System Ready"}
+              {status === "connecting" && "Initializing..."}
+              {status === "connected" && "Listening..."}
+              {status === "speaking" && "AI Speaking"}
+              {status === "error" && "Error Detected"}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsLogoutDialogOpen(true)}
-            title="Sign Out"
-            className="hover:bg-red-500/10 hover:text-red-400 text-muted-foreground"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
-          <SidebarTrigger className="text-muted-foreground hover:text-foreground hover:bg-muted/50" />
+        {/* Right Side: User Profile, Actions & Sidebar Trigger */}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3 pr-4 border-r border-white/10">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-70">
+                Authorized
+              </span>
+              <span className="text-xs font-medium text-foreground/90 truncate max-w-[140px]">
+                {user?.email || "User Account"}
+              </span>
+            </div>
+            <div className="h-9 w-9 bg-primary/15 rounded-xl border border-primary/20 flex items-center justify-center shrink-0 shadow-inner group overflow-hidden">
+              <Image
+                src={IMAGES.DevstreeDLogo}
+                alt="Profile"
+                width={24}
+                height={24}
+                className="w-5 h-5 transition-transform group-hover:scale-110"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsLogoutDialogOpen(true)}
+              title="Sign Out"
+              className="w-10 h-10 rounded-xl hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-all duration-300"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+            <div className="w-px h-6 bg-white/10 mx-1" />
+            <SidebarTrigger className="w-10 h-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all" />
+          </div>
         </div>
       </div>
 
@@ -122,11 +157,7 @@ export const Header = () => {
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
+            <Button variant="default" onClick={handleLogout} className="">
               Sign Out
             </Button>
           </DialogFooter>

@@ -66,14 +66,10 @@ export const SineWave: React.FC<SineWaveProps> = ({ isSpeaking, type }) => {
       // Gradient
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
 
-      if (type === "ai") {
+      if (type === "ai" || type === "connecting") {
         gradient.addColorStop(0, "rgba(120, 0, 255, 0)");
-        gradient.addColorStop(0.5, "rgba(255, 0, 200, 0.85)");
+        gradient.addColorStop(0.5, "rgba(232, 3, 57, 0.85)");
         gradient.addColorStop(1, "rgba(0, 200, 255, 0)");
-      } else if (type === "connecting") {
-        gradient.addColorStop(0, "rgba(245, 158, 11, 0)");
-        gradient.addColorStop(0.5, "rgba(251, 191, 36, 0.85)");
-        gradient.addColorStop(1, "rgba(180, 83, 9, 0)");
       } else {
         gradient.addColorStop(0, "rgba(0, 200, 120, 0)");
         gradient.addColorStop(0.5, "rgba(0, 220, 255, 0.85)");
@@ -81,10 +77,8 @@ export const SineWave: React.FC<SineWaveProps> = ({ isSpeaking, type }) => {
       }
 
       ctx.shadowBlur = 20;
-      if (type === "ai") {
-        ctx.shadowColor = "rgba(255, 0, 200, 0.6)";
-      } else if (type === "connecting") {
-        ctx.shadowColor = "rgba(251, 191, 36, 0.6)";
+      if (type === "ai" || type === "connecting") {
+        ctx.shadowColor = "rgba(232, 3, 57, 0.6)";
       } else {
         ctx.shadowColor = "rgba(0, 220, 255, 0.6)";
       }

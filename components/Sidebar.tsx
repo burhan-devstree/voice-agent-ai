@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { MessageSquare, Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "./ui/button";
+import Image from "next/image";
+import { IMAGES } from "@/utils/Images";
 
 interface SidebarProps extends React.ComponentProps<typeof ShadcnSidebar> {
   onConversationSelect: (id: string) => void;
@@ -87,8 +89,14 @@ export const Sidebar = ({
           <SidebarMenuItem>
             <div className="flex flex-col gap-2 pb-2 group-data-[collapsible=icon]:hidden">
               <div className="flex items-center gap-2 px-2 py-1">
-                <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                  <MessageSquare className="w-3.5 h-3.5 text-primary-foreground" />
+                <div className="h-8 w-8 flex items-center justify-center rounded-md ">
+                  <Image
+                    src={IMAGES.DevstreeDLogo}
+                    alt="Devstree Logo"
+                    width={100}
+                    height={100}
+                    className="w-7 h-7"
+                  />
                 </div>
                 <span className="font-bold text-sidebar-foreground tracking-tight">
                   Voice Chat
@@ -97,7 +105,7 @@ export const Sidebar = ({
               <Button
                 onClick={handleNewChat}
                 size="sm"
-                className="w-full justify-start gap-2 h-auto py-3 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-95 border border-primary/20"
+                className="w-full justify-start gap-2 h-auto py-3 bg-gradient-to-r to-primary/45 from-primary  hover:from-primary/90  text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-95 "
               >
                 <Plus className="w-4 h-4" />{" "}
                 <span className="truncate font-medium">New Voice Session</span>

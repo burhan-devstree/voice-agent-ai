@@ -17,6 +17,8 @@ export const VoiceMode = () => {
   return (
     <div className="flex flex-col h-full w-full bg-background relative overflow-hidden">
       {/* Sphere Animation Area */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/15 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/15 blur-[120px] rounded-full animate-pulse delay-700" />
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full perspective-[1000px] px-4">
         {/* Ambient Background Glow */}
         {(isActive || isConnecting) && (
@@ -83,7 +85,7 @@ export const VoiceMode = () => {
                 : status === "connected"
                 ? "text-indigo-200/70"
                 : status === "connecting"
-                ? "text-amber-400"
+                ? "text-primary/50"
                 : "text-slate-500"
             )}
           >
@@ -105,8 +107,8 @@ export const VoiceMode = () => {
               onClick={connect}
               disabled={isConnecting}
               className={cn(
-                "w-full h-14 !cursor-pointer text-base font-semibold shadow-xl shadow-indigo-600/20 transition-all active:scale-95",
-                "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white border border-indigo-400/20"
+                "w-full h-14 !cursor-pointer text-base font-semibold shadow-xl shadow-primary/30 transition-all active:scale-95",
+                "bg-gradient-to-r to-primary/45 from-primary  hover:from-primary/90  text-primary-foreground"
               )}
             >
               {isConnecting ? (
