@@ -1,8 +1,7 @@
 import { Token_Storage_Key } from "@/utils/constants";
-import { UserProfile } from "@/types/api";
 import Cookies from "js-cookie";
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export type LogType = "info" | "success" | "error" | "agent" | "user";
 
@@ -16,7 +15,6 @@ export interface Log {
 interface AppState {
   // Auth State
   token: string | null;
-  user: UserProfile | null;
   isAuthenticated: boolean;
 
   // UI State
@@ -26,7 +24,6 @@ interface AppState {
 
   // Actions
   setToken: (token: string) => void;
-  setUser: (user: UserProfile | null) => void;
   setViewState: (view: "email" | "otp" | "dashboard") => void;
   setEmailInput: (email: string) => void;
   logout: () => void;
@@ -38,7 +35,6 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       token: Cookies.get(Token_Storage_Key) || null,
-      user: null,
       isAuthenticated: !!Cookies.get(Token_Storage_Key),
       view: Cookies.get(Token_Storage_Key) ? "dashboard" : "email",
       emailInput: "",
@@ -49,8 +45,6 @@ export const useAppStore = create<AppState>()(
         set({ token, isAuthenticated: true, view: "dashboard" });
       },
 
-      setUser: (user) => set({ user }),
-
       setViewState: (view) => set({ view }),
 
       setEmailInput: (email) => set({ emailInput: email }),
@@ -59,7 +53,6 @@ export const useAppStore = create<AppState>()(
         Cookies.remove(Token_Storage_Key);
         set({
           token: null,
-          user: null,
           isAuthenticated: false,
           view: "email",
           logs: [],
@@ -81,14 +74,11 @@ export const useAppStore = create<AppState>()(
     {
       name: "voice-agent-storage",
       storage: createJSONStorage(() => localStorage),
-      // Only persist specific parts of the state if needed,
-      // but here we persist everything except maybe logs if they are too large.
-      // partialize: (state) => ({
-      //   token: state.token,
-      //   user: state.user,
-      //   isAuthenticated: state.isAuthenticated,
-      //   emailInput: state.emailInput
-      // }),
+      partialize: (state) => ({
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+        emailInput: state.emailInput,
+      }),
     }
   )
 );

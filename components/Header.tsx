@@ -20,8 +20,8 @@ import { IMAGES } from "@/utils/Images";
 import Link from "next/link";
 
 export const Header = () => {
-  const { user, logout } = useAppStore();
-  console.log("🚀 ~ Header ~ user:", user);
+  const { emailInput, logout } = useAppStore();
+
   const { status } = useVoiceSession();
   const router = useRouter();
   const isActive = status === "connected" || status === "speaking";
@@ -59,7 +59,7 @@ export const Header = () => {
         </div>
 
         {/* Status Center Badge (Absolute Centered) */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:block">
           <div
             className={cn(
               "flex items-center gap-2.5 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 shadow-sm",
@@ -109,8 +109,8 @@ export const Header = () => {
               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-70">
                 Authorized
               </span>
-              <span className="text-xs font-medium text-foreground/90 truncate max-w-[140px]">
-                {user?.email || "User Account"}
+              <span className="text-xs font-medium text-foreground/90">
+                {emailInput || "User Account"}
               </span>
             </div>
             <div className="h-9 w-9 bg-primary/15 rounded-xl border border-primary/20 flex items-center justify-center shrink-0 shadow-inner group overflow-hidden">
