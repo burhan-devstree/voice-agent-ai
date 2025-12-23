@@ -19,6 +19,7 @@ import { Input } from "./ui/input";
 import Image from "next/image";
 import { IMAGES } from "@/utils/Images";
 import Link from "next/link";
+import TopHeader from "./TopHeader";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -28,50 +29,32 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/15 blur-[120px] rounded-full animate-pulse delay-700" />
 
       {/* Top Left Logo */}
-      <div className="absolute top-8 left-8 hidden md:block z-20">
-        <Link
-          href="https://www.devstree.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block group"
-        >
-          <div className="bg-white/95  p-3 rounded-2xl shadow-xl border border-white/20 transition-all group-hover:scale-105 group-hover:bg-white duration-300">
-            <Image
-              src={IMAGES.FullLogoBlack}
-              alt="Devstree Full Logo"
-              width={100}
-              height={50}
-              unoptimized
-              className="h-8 w-auto object-contain"
-            />
-          </div>
-        </Link>
-      </div>
-
-      {/* Mobile Logo */}
-      <div className="md:hidden absolute top-8 left-1/2 -translate-x-1/2 z-20">
-        <Link
-          href="https://www.devstree.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
-        >
-          <div className="bg-white/95 p-2.5 rounded-xl shadow-lg border border-white/20">
-            <Image
-              src={IMAGES.FullLogoBlack}
-              alt="Devstree Full Logo"
-              width={130}
-              height={40}
-              unoptimized
-              className="h-7 w-auto object-contain"
-            />
-          </div>
-        </Link>
-      </div>
+      <TopHeader />
 
       <div className="relative z-10 w-full flex justify-center items-center">
         {children}
       </div>
+    </div>
+  );
+};
+
+const CommanLogo = () => {
+  return (
+    <div className="mx-auto w-20 h-20 bg-linear-to-tr from-primary to-primary/60 p-0.5 rounded-3xl shadow-2xl shadow-primary/20 rotate-6 hover:rotate-0 transition-all duration-500 overflow-hidden group">
+      <Link
+        href="https://www.devstree.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full h-full bg-slate-900 rounded-[calc(1.5rem-2px)] flex items-center justify-center transition-colors group-hover:bg-slate-800"
+      >
+        <Image
+          src={IMAGES.DevstreeDLogo}
+          alt="Devstree Logo"
+          width={100}
+          height={100}
+          className="w-12 h-12 ml-1"
+        />
+      </Link>
     </div>
   );
 };
@@ -107,22 +90,7 @@ export const EmailForm = () => {
     <AuthLayout>
       <Card className="w-full max-w-md animate-in fade-in zoom-in-95 duration-700 border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-2xl shadow-primary/5 ring-1 ring-white/5">
         <CardHeader className="space-y-4 pb-8">
-          <div className="mx-auto w-20 h-20 bg-linear-to-tr from-primary to-primary/60 p-0.5 rounded-3xl shadow-2xl shadow-primary/20 rotate-6 hover:rotate-0 transition-all duration-500 overflow-hidden group">
-            <Link
-              href="https://www.devstree.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full h-full bg-slate-900 rounded-[calc(1.5rem-2px)] flex items-center justify-center transition-colors group-hover:bg-slate-800"
-            >
-              <Image
-                src={IMAGES.DevstreeDLogo}
-                alt="Devstree Logo"
-                width={100}
-                height={100}
-                className="w-12 h-12 ml-1"
-              />
-            </Link>
-          </div>
+          <CommanLogo />
           <div className="text-center space-y-2">
             <CardTitle className="text-4xl font-extrabold tracking-tight bg-linear-to-b from-white to-slate-400 bg-clip-text text-transparent">
               Welcome
@@ -204,22 +172,7 @@ export const OtpForm = () => {
     <AuthLayout>
       <Card className="w-full max-w-md animate-in fade-in zoom-in-95 duration-700 border-white/10 bg-slate-900/60 backdrop-blur-3xl shadow-2xl shadow-primary/5 ring-1 ring-white/5">
         <CardHeader className="space-y-4 pb-8">
-          <div className="mx-auto w-20 h-20 bg-linear-to-tr from-primary to-primary/60 p-0.5 rounded-3xl shadow-2xl shadow-primary/20 rotate-6 hover:rotate-0 transition-all duration-500 overflow-hidden group">
-            <Link
-              href="https://www.devstree.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full h-full bg-slate-900 rounded-[calc(1.5rem-2px)] flex items-center justify-center transition-colors group-hover:bg-slate-800"
-            >
-              <Image
-                src={IMAGES.DevstreeDLogo}
-                alt="Devstree Logo"
-                width={100}
-                height={100}
-                className="w-12 h-12 ml-1"
-              />
-            </Link>
-          </div>
+          <CommanLogo />
           <div className="text-center space-y-2">
             <CardTitle className="text-4xl font-extrabold tracking-tight bg-linear-to-b from-white to-slate-400 bg-clip-text text-transparent">
               Verify OTP
